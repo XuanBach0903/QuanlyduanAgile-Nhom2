@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <color name="auth_bg_start">#FFF7F8FF</color>
+    <color name="auth_bg_end">#FFEFF6FF</color>
+
+    <color name="surface">#FFFFFFFF</color>
+    <color name="card_stroke">#1A0F172A</color>
+
+    <color name="text_primary">#FF0F172A</color>
+    <color name="text_secondary">#FF64748B</color>
+    <color name="text_hint">#FF94A3B8</color>
+
+    <color name="tab_container">#FFF1F5F9</color>
+
+    <color name="input_bg">#FFF8FAFF</color>
+    <color name="input_stroke">#2A2563EB</color>
+
+    <color name="btn_start">#FF2563EB</color>
+    <color name="btn_end">#FF7C3AED</color>
+</resources>
