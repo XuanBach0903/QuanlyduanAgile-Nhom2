@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from './config.js';
+import { ProductDetailPage } from './ProductDetailPage.jsx';
 import './components/AdminLayout.css';
 
 export function SearchPage() {
@@ -16,6 +17,7 @@ export function SearchPage() {
   const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [selectedProductId, setSelectedProductId] = useState(null);
 
   // Load categories for filter dropdown
   useEffect(() => {
@@ -113,6 +115,14 @@ export function SearchPage() {
     setCurrentPage(page);
   }
 
+  function handleProductClick(productId) {
+    setSelectedProductId(productId);
+  }
+
+  function handleCloseDetail() {
+    setSelectedProductId(null);
+  }
+
   function formatPrice(price) {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
@@ -121,9 +131,16 @@ export function SearchPage() {
   }
 
   return (
-    <div className="admin-root">
-      <div className="admin-panel">
-        <div className="admin-panel-title">Tìm Kiếm Sản Phẩm</div>
+    <>
+      {selectedProductId ? (
+        <ProductDetailPage 
+          productId={selectedProductId} 
+          onClose={handleCloseDetail} 
+        />
+      ) : (
+        <div className="admin-root">
+          <div className="admin-panel">
+            <div className="admin-panel-title">Tìm Kiếm Sản Phẩm</div>
         
         {/* Search Form */}
         <form onSubmit={handleSearch} style={{ marginBottom: 20 }}>
@@ -309,14 +326,20 @@ export function SearchPage() {
               Tìm thấy {products.length} sản phẩm
             </div>
             
+            <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 12, fontStyle: 'italic' }}>
+              Nhấp vào sản phẩm để xem chi tiết
+            </div>
+            
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 16 }}>
               {products.map(product => (
                 <div key={product.id} style={{
                   border: '1px solid #e5e7eb',
                   borderRadius: 8,
                   padding: 12,
-                  backgroundColor: 'white'
-                }}>
+                  backgroundColor: 'white',
+                  cursor: 'pointer'
+                }}
+                onClick={() => handleProductClick(product.id)}>
                   {/* Product Image */}
                   <div style={{
                     width: '100%',
@@ -461,7 +484,9 @@ export function SearchPage() {
             Nhập từ khóa hoặc chọn bộ lọc để tìm kiếm sản phẩm
           </div>
         )}
-      </div>
-    </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
