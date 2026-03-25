@@ -2,4 +2,20 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    
+    <!-- App Colors -->
+    <color name="primary">#111827</color>
+    <color name="accent">#f59e0b</color>
+    <color name="error">#dc2626</color>
+    <color name="success">#16a34a</color>
+    
+    <!-- Text Colors -->
+    <color name="text_primary">#111827</color>
+    <color name="text_secondary">#6b7280</color>
+    <color name="text_hint">#9ca3af</color>
+    
+    <!-- Background Colors -->
+    <color name="bg_light">#f9fafb</color>
+    <color name="bg_card">#ffffff</color>
+    <color name="divider">#e5e7eb</color>
 </resources>
