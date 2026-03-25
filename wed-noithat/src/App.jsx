@@ -4,6 +4,7 @@ import { CategoryTab } from './tabs/CategoryTab.jsx'
 import { ProductTab } from './tabs/ProductTab.jsx'
 import { LoginPage } from './LoginPage.jsx'
 import { RegisterPage } from './RegisterPage.jsx'
+import { SearchPage } from './SearchPage.jsx'
 
 function App() {
   const [activeTab, setActiveTab] = useState('categories')
@@ -113,11 +114,18 @@ function App() {
           >
             Sản Phẩm
           </button>
+          <button
+            className={`tab-btn ${activeTab === 'search' ? 'active' : ''}`}
+            onClick={() => setActiveTab('search')}
+          >
+            Tìm Kiếm
+          </button>
         </div>
       </header>
       <main className="app-main">
         {activeTab === 'categories' && <CategoryTab />}
         {activeTab === 'products' && <ProductTab />}
+        {activeTab === 'search' && <SearchPage />}
       </main>
     </div>
   )
