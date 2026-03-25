@@ -14,7 +14,7 @@ function pickCover(sp) {
   return '';
 }
 
-// GET /san-pham?danhMucId=&tuKhoa=&trang=1&gioiHan=6
+// GET /san-pham?danhMucId=&tuKhoa=&trang=1&gioiHan=6&giaMin=&giaMax=&tonKhoMin=
 async function getSanPhamList(req, res, next) {
   try {
     const {
@@ -22,25 +22,57 @@ async function getSanPhamList(req, res, next) {
       tuKhoa,
       trang = 1,
       gioiHan = 6,
+      giaMin,
+      giaMax,
+      tonKhoMin,
+      sortBy = 'ngay_tao',
+      sortOrder = 'desc'
     } = req.query;
 
     const page = Math.max(parseInt(trang, 10) || 1, 1);
     const limit = Math.max(parseInt(gioiHan, 10) || 6, 1);
     const filter = { trang_thai: 1 };
 
+    // Category filter
     if (danhMucId && mongoose.isValidObjectId(danhMucId)) {
       filter.danh_muc_id = danhMucId;
     }
 
+    // Text search
     if (tuKhoa && tuKhoa.trim() !== '') {
       const regex = new RegExp(tuKhoa.trim(), 'i');
       filter.ten = regex;
     }
 
+    // Price range filter
+    if (giaMin || giaMax) {
+      filter.gia = {};
+      if (giaMin && !isNaN(parseFloat(giaMin))) {
+        filter.gia.$gte = parseFloat(giaMin);
+      }
+      if (giaMax && !isNaN(parseFloat(giaMax))) {
+        filter.gia.$lte = parseFloat(giaMax);
+      }
+    }
+
+    // Stock filter
+    if (tonKhoMin && !isNaN(parseInt(tonKhoMin))) {
+      filter.ton_kho = { $gte: parseInt(tonKhoMin) };
+    }
+
+    // Sorting
+    const sortOptions = {
+      ngay_tao: sortBy === 'ngay_tao' ? -1 : 1,
+      gia: sortOrder === 'asc' ? 1 : -1,
+      ten: sortBy === 'ten' ? (sortOrder === 'asc' ? 1 : -1) : 1,
+      ton_kho: sortBy === 'ton_kho' ? (sortOrder === 'asc' ? 1 : -1) : 1
+    };
+    const sortField = sortOptions[sortBy] || -1;
+
     const [tongSanPham, danhSach] = await Promise.all([
       SanPham.countDocuments(filter),
       SanPham.find(filter)
-        .sort({ ngay_tao: -1 })
+        .sort({ [sortBy]: sortField })
         .skip((page - 1) * limit)
         .limit(limit),
     ]);
@@ -69,6 +101,15 @@ async function getSanPhamList(req, res, next) {
       gioiHan: limit,
       tongSanPham,
       tongTrang,
+      filters: {
+        danhMucId,
+        tuKhoa,
+        giaMin,
+        giaMax,
+        tonKhoMin,
+        sortBy,
+        sortOrder
+      },
       danhSach: danhSach.map((sp) => ({
         id: sp._id,
         ten: sp.ten,

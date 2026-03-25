@@ -5,6 +5,11 @@ import './components/AdminLayout.css';
 export function SearchPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
+  const [priceMin, setPriceMin] = useState('');
+  const [priceMax, setPriceMax] = useState('');
+  const [stockMin, setStockMin] = useState('');
+  const [sortBy, setSortBy] = useState('ngay_tao');
+  const [sortOrder, setSortOrder] = useState('desc');
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -49,6 +54,17 @@ export function SearchPage() {
         if (selectedCategoryId) {
           params.set('danhMucId', selectedCategoryId);
         }
+        if (priceMin) {
+          params.set('giaMin', priceMin);
+        }
+        if (priceMax) {
+          params.set('giaMax', priceMax);
+        }
+        if (stockMin) {
+          params.set('tonKhoMin', stockMin);
+        }
+        params.set('sortBy', sortBy);
+        params.set('sortOrder', sortOrder);
         params.set('trang', currentPage);
         params.set('gioiHan', 12);
 
@@ -76,7 +92,7 @@ export function SearchPage() {
       }
     }
 
-    if (searchTerm.trim() || selectedCategoryId) {
+    if (searchTerm.trim() || selectedCategoryId || priceMin || priceMax || stockMin) {
       searchProducts();
     } else {
       setProducts([]);
@@ -86,7 +102,7 @@ export function SearchPage() {
     return () => {
       active = false;
     };
-  }, [searchTerm, selectedCategoryId, currentPage]);
+  }, [searchTerm, selectedCategoryId, priceMin, priceMax, stockMin, sortBy, sortOrder, currentPage]);
 
   function handleSearch(e) {
     e.preventDefault();
@@ -111,7 +127,8 @@ export function SearchPage() {
         
         {/* Search Form */}
         <form onSubmit={handleSearch} style={{ marginBottom: 20 }}>
-          <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
+          {/* Basic Search Row */}
+          <div style={{ display: 'flex', gap: 10, marginBottom: 15 }}>
             <input
               type="text"
               placeholder="Nhập tên sản phẩm cần tìm..."
@@ -152,6 +169,114 @@ export function SearchPage() {
               style={{ padding: '8px 16px' }}
             >
               {loading ? 'Đang tìm...' : 'Tìm kiếm'}
+            </button>
+          </div>
+
+          {/* Advanced Filters Row */}
+          <div style={{ display: 'flex', gap: 10, marginBottom: 15, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <label style={{ fontSize: 13, color: '#6b7280' }}>Giá:</label>
+              <input
+                type="number"
+                placeholder="Từ"
+                value={priceMin}
+                onChange={(e) => setPriceMin(e.target.value)}
+                style={{
+                  width: 80,
+                  padding: '6px 8px',
+                  borderRadius: 4,
+                  border: '1px solid #e5e7eb',
+                  fontSize: 13,
+                }}
+              />
+              <span style={{ color: '#6b7280' }}>-</span>
+              <input
+                type="number"
+                placeholder="Đến"
+                value={priceMax}
+                onChange={(e) => setPriceMax(e.target.value)}
+                style={{
+                  width: 80,
+                  padding: '6px 8px',
+                  borderRadius: 4,
+                  border: '1px solid #e5e7eb',
+                  fontSize: 13,
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <label style={{ fontSize: 13, color: '#6b7280' }}>Tồn kho tối thiểu:</label>
+              <input
+                type="number"
+                placeholder="0"
+                value={stockMin}
+                onChange={(e) => setStockMin(e.target.value)}
+                style={{
+                  width: 60,
+                  padding: '6px 8px',
+                  borderRadius: 4,
+                  border: '1px solid #e5e7eb',
+                  fontSize: 13,
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <label style={{ fontSize: 13, color: '#6b7280' }}>Sắp xếp:</label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                style={{
+                  padding: '6px 8px',
+                  borderRadius: 4,
+                  border: '1px solid #e5e7eb',
+                  fontSize: 13,
+                }}
+              >
+                <option value="ngay_tao">Ngày tạo</option>
+                <option value="gia">Giá</option>
+                <option value="ten">Tên</option>
+                <option value="ton_kho">Tồn kho</option>
+              </select>
+              <select
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value)}
+                style={{
+                  padding: '6px 8px',
+                  borderRadius: 4,
+                  border: '1px solid #e5e7eb',
+                  fontSize: 13,
+                }}
+              >
+                <option value="desc">Giảm dần</option>
+                <option value="asc">Tăng dần</option>
+              </select>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSearchTerm('');
+                setSelectedCategoryId('');
+                setPriceMin('');
+                setPriceMax('');
+                setStockMin('');
+                setSortBy('ngay_tao');
+                setSortOrder('desc');
+                setCurrentPage(1);
+              }}
+              style={{
+                padding: '6px 12px',
+                borderRadius: 4,
+                border: '1px solid #dc2626',
+                backgroundColor: 'white',
+                color: '#dc2626',
+                cursor: 'pointer',
+                fontSize: 13,
+              }}
+            >
+              Xóa bộ lọc
             </button>
           </div>
         </form>
@@ -316,24 +441,24 @@ export function SearchPage() {
         )}
 
         {/* No Results */}
-        {!loading && !error && searchTerm && products.length === 0 && (
+        {!loading && !error && (searchTerm || selectedCategoryId || priceMin || priceMax || stockMin) && products.length === 0 && (
           <div style={{ 
             textAlign: 'center', 
             padding: 40, 
             color: '#6b7280' 
           }}>
-            Không tìm thấy sản phẩm nào phù hợp với từ khóa "{searchTerm}"
+            Không tìm thấy sản phẩm nào phù hợp với bộ lọc đã chọn
           </div>
         )}
 
         {/* Initial State */}
-        {!loading && !error && !searchTerm && (
+        {!loading && !error && !searchTerm && !selectedCategoryId && !priceMin && !priceMax && !stockMin && (
           <div style={{ 
             textAlign: 'center', 
             padding: 40, 
             color: '#6b7280' 
           }}>
-            Nhập từ khóa để tìm kiếm sản phẩm
+            Nhập từ khóa hoặc chọn bộ lọc để tìm kiếm sản phẩm
           </div>
         )}
       </div>
