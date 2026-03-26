@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/drawer_root"
+    android:layout_width="280dp"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="sans-serif-medium"
+            android:text="Menu"
+            android:textColor="@color/text_primary"
+            android:textSize="18sp" />
+
+        <ImageButton
+            android:id="@+id/btn_close_drawer"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@android:color/transparent"
+            android:contentDescription="Close"
+            android:src="@android:drawable/ic_menu_close_clear_cancel" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="12dp" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="44dp">
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_menu_orders"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_input"
+            android:gravity="start|center_vertical"
+            android:paddingHorizontal="14dp"
+            android:text="Đơn Hàng"
+            android:textAllCaps="false"
+            android:textColor="@color/text_primary" />
+
+        <TextView
+            android:id="@+id/tv_orders_badge"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_gravity="end|top"
+            android:layout_marginTop="2dp"
+            android:layout_marginEnd="2dp"
+            android:background="#111827"
+            android:gravity="center"
+            android:text="0"
+            android:textColor="@color/white"
+            android:textSize="11sp"
+            android:visibility="gone" />
+
+    </FrameLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="10dp" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_menu_chat"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:background="@drawable/bg_input"
+        android:gravity="start|center_vertical"
+        android:paddingHorizontal="14dp"
+        android:text="Tư Vấn"
+        android:textAllCaps="false"
+        android:textColor="@color/text_primary" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="10dp" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_menu_account"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:background="@drawable/bg_input"
+        android:gravity="start|center_vertical"
+        android:paddingHorizontal="14dp"
+        android:text="Tài Khoản"
+        android:textAllCaps="false"
+        android:textColor="@color/text_primary" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="10dp" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_menu_policy"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:background="@drawable/bg_input"
+        android:gravity="start|center_vertical"
+        android:paddingHorizontal="14dp"
+        android:text="Chính sách"
+        android:textAllCaps="false"
+        android:textColor="@color/text_primary" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="10dp" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_menu_terms"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:background="@drawable/bg_input"
+        android:gravity="start|center_vertical"
+        android:paddingHorizontal="14dp"
+        android:text="Điều khoản &amp; dịch vụ"
+        android:textAllCaps="false"
+        android:textColor="@color/text_primary" />
+
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <Button
+        android:id="@+id/btn_menu_logout"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:backgroundTint="#E11D48"
+        android:fontFamily="sans-serif-medium"
+        android:gravity="center"
+        android:text="Đăng Xuất"
+        android:textAllCaps="false"
+       android:layout_marginBottom="50dp"
+        android:textColor="@color/white" />
+
+</LinearLayout>
