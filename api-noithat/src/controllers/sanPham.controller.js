@@ -1,4 +1,4 @@
-// BUG: tìm kiếm không trả kết quả khi nhập từ khóa
+//test: verify chức năng sau khi fix
 
 const mongoose = require('mongoose');
 const SanPham = require('../models/SanPham');
