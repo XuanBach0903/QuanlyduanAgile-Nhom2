@@ -5,7 +5,7 @@ const {
   capNhatDanhMuc,
   xoaDanhMuc,
 } = require('../controllers/adminDanhMuc.controller');
-
+// fix: thêm validate
 const router = express.Router();
 
 // Routes cho quản lý danh mục

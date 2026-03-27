@@ -39,7 +39,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
-
+//fix: thêm validate
     private DrawerLayout drawerLayout;
     private EditText etSearch;
     private ChipGroup chipGroup;
