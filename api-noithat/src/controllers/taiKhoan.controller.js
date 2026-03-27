@@ -1,5 +1,6 @@
 // BUG: thiếu validate email khi đăng ký
 // BUG: cho phép đăng ký khi thiếu password
+
 // BUG: chưa kiểm tra định dạng email
 
 // EXPECT: phải validate đầy đủ thông tin trước khi đăng ký
