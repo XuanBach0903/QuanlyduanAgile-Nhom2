@@ -1,3 +1,11 @@
+// BUG: thiếu validate email khi đăng ký
+// BUG: cho phép đăng ký khi thiếu password
+// BUG: chưa kiểm tra định dạng email
+
+// EXPECT: phải validate đầy đủ thông tin trước khi đăng ký
+// BUG: tìm kiếm không trả kết quả
+// EXPECT: phải trả về danh sách sản phẩm phù hợp
+
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const NguoiDung = require('../models/NguoiDung');
