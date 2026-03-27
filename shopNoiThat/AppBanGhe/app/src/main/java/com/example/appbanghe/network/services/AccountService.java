@@ -13,7 +13,7 @@ import retrofit2.http.PATCH;
 import retrofit2.http.POST;
 
 public interface AccountService {
-
+// fix: sửa lỗi tìm kiếm sản phẩm
     @POST("tai-khoan/dang-ky")
     Call<JsonObject> dangKy(@Body RegisterRequest body);
 
