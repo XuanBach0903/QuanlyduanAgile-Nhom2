@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const morgan = require('morgan');
 const cors = require('cors');
 
+<<<<<<< HEAD
 const adminDanhMucRoutes = require('./src/routes/adminDanhMuc.routes')
 
 // ❌ BUG: file danhMuc.routes.js không tồn tại trong src/routes
@@ -16,11 +17,17 @@ const taiKhoanRoutes = require('./src/routes/taiKhoan.routes');
 
 // ❌ BUG: có thể các file dưới chưa tồn tại → dễ crash server
 // 👉 nên comment nếu chưa làm Sprint sau
+=======
+const danhMucRoutes = require('./src/routes/danhMuc.routes');
+const sanPhamRoutes = require('./src/routes/sanPham.routes');
+const taiKhoanRoutes = require('./src/routes/taiKhoan.routes');
+>>>>>>> develop
 const gioHangRoutes = require('./src/routes/gioHang.routes');
 const donHangRoutes = require('./src/routes/donHang.routes');
 const thanhToanRoutes = require('./src/routes/thanhToan.routes');
 const chatRoutes = require('./src/routes/chat.routes');
 const danhGiaRoutes = require('./src/routes/danhGia.routes');
+<<<<<<< HEAD
 
 const adminSanPhamRoutes = require('./src/routes/adminSanPham.routes');
 const adminDonHangRoutes = require('./src/routes/adminDonHang.routes');
@@ -30,12 +37,19 @@ const adminHoaDonRoutes = require('./src/routes/adminHoaDon.routes');
 // 👉 sẽ gây lỗi "Identifier already declared"
 const adminDanhMucRoutes = require('./src/routes/adminDanhMuc.routes');
 
+=======
+const adminSanPhamRoutes = require('./src/routes/adminSanPham.routes');
+const adminDonHangRoutes = require('./src/routes/adminDonHang.routes');
+const adminHoaDonRoutes = require('./src/routes/adminHoaDon.routes');
+const adminDanhMucRoutes = require('./src/routes/adminDanhMuc.routes');
+>>>>>>> develop
 const adminKhachHangRoutes = require('./src/routes/adminKhachHang.routes');
 const adminChatRoutes = require('./src/routes/adminChat.routes');
 const adminThongKeRoutes = require('./src/routes/adminThongKe.routes');
 
 const app = express();
 
+<<<<<<< HEAD
 // ❌ BUG: mount admin route ở "/" → dễ đè route khác
 // 👉 nên dùng /admin
 app.use('/', adminDanhMucRoutes);
@@ -56,6 +70,29 @@ app.use('/san-pham', sanPhamRoutes);
 app.use('/tai-khoan', taiKhoanRoutes);
 
 // ❌ BUG: các route này nếu file chưa tồn tại → server crash
+=======
+// Middleware chung
+app.use(cors());
+app.use(express.json());
+app.use(morgan('dev'));
+
+// Kết nối MongoDB
+const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/banhang';
+
+mongoose
+  .connect(mongoUri)
+  .then(() => {
+    console.log('MongoDB connected');
+  })
+  .catch((err) => {
+    console.error('MongoDB connection error:', err.message);
+  });
+
+// Routes
+app.use('/danh-muc', danhMucRoutes);
+app.use('/san-pham', sanPhamRoutes);
+app.use('/tai-khoan', taiKhoanRoutes);
+>>>>>>> develop
 app.use('/gio-hang', gioHangRoutes);
 app.use('/don-hang', donHangRoutes);
 app.use('/', thanhToanRoutes);

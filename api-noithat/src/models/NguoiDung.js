@@ -17,5 +17,9 @@ const NguoiDungSchema = new mongoose.Schema(
     collection: 'nguoi_dung',
   }
 );
+<<<<<<< HEAD
 
+=======
+//fix: sửa lỗi tìm kiếm sản phẩm
+>>>>>>> develop
 module.exports = mongoose.model('NguoiDung', NguoiDungSchema);

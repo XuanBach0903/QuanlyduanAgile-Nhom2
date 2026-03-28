@@ -25,8 +25,11 @@ export function LoginPage({ onLoginSuccess }) {
         throw new Error(data.message || `Dang nhap that bai (${res.status})`);
       }
       const data = await res.json();
+<<<<<<< HEAD
       // ❌ BUG: chặn user không phải ADMIN
       // 👉 nếu login user thường sẽ luôn lỗi
+=======
+>>>>>>> develop
       if (!data.user || data.user.vaiTro !== 'ADMIN') {
         throw new Error('Tai khoan khong co quyen ADMIN');
       }
