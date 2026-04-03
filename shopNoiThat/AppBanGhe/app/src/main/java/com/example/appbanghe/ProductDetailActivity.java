@@ -27,6 +27,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import com.google.android.material.snackbar.Snackbar;
+
 import java.text.NumberFormat;
 import java.util.Locale;
 
@@ -353,7 +355,9 @@ public class ProductDetailActivity extends AppCompatActivity {
                     Toast.makeText(ProductDetailActivity.this, "Thêm vào giỏ thất bại: HTTP " + response.code(), Toast.LENGTH_SHORT).show();
                     return;
                 }
-                Toast.makeText(ProductDetailActivity.this, "Đã thêm vào giỏ", Toast.LENGTH_SHORT).show();
+                Snackbar.make(findViewById(R.id.detail_root), "Đã thêm vào giỏ hàng", Snackbar.LENGTH_LONG)
+                        .setAction("Xem giỏ", v -> startActivity(new Intent(ProductDetailActivity.this, CartActivity.class)))
+                        .show();
             }
 
             @Override
