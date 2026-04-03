@@ -277,6 +277,198 @@ function OrderTab() {
     })
   }
 
+  const thanhToanDonHang = async (orderId, phuongThuc) => {
+    try {
+      const token = localStorage.getItem('adminToken')
+      
+      if (phuongThuc === 'COD') {
+        // Xử lý thanh toán COD
+        const response = await fetch(`${config.API_BASE_URL}/payment/cod/confirm`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            orderId: orderId,
+            amount: selectedOrder?.tongTien || 0,
+            orderInfo: `Thanh toán COD đơn hàng ${orderId}`
+          })
+        })
+
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.message || 'Không thể xác nhận thanh toán COD')
+        }
+
+        const data = await response.json()
+        alert(data.message || 'Đã xác nhận thanh toán COD thành công')
+        fetchOrders()
+        setShowDetail(false)
+      } else if (phuongThuc === 'VNPAY') {
+        // Tạo URL thanh toán VNPAY
+        const response = await fetch(`${config.API_BASE_URL}/payment/vnpay/create`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            orderId: orderId,
+            amount: selectedOrder?.tongTien || 0,
+            orderInfo: `Thanh toán VNPAY đơn hàng ${orderId}`,
+            returnUrl: `${window.location.origin}/payment/success`,
+            ipAddr: '127.0.0.1'
+          })
+        })
+
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.message || 'Không thể tạo thanh toán VNPAY')
+        }
+
+        const data = await response.json()
+        if (data.paymentUrl) {
+          // Chuyển hướng đến trang thanh toán VNPAY
+          window.open(data.paymentUrl, '_blank')
+          alert('Đang mở trang thanh toán VNPAY. Vui lòng hoàn tất thanh toán và quay lại để cập nhật trạng thái.')
+        }
+      } else if (phuongThuc === 'PAYPAL') {
+        // Tạo URL thanh toán PayPal
+        const response = await fetch(`${config.API_BASE_URL}/payment/paypal/create`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            orderId: orderId,
+            amount: selectedOrder?.tongTien || 0,
+            orderInfo: `Thanh toán PayPal đơn hàng ${orderId}`,
+            returnUrl: `${window.location.origin}/payment/success`,
+            cancelUrl: `${window.location.origin}/payment/cancel`
+          })
+        })
+
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.message || 'Không thể tạo thanh toán PayPal')
+        }
+
+        const data = await response.json()
+        if (data.paymentUrl) {
+          // Chuyển hướng đến trang thanh toán PayPal
+          window.open(data.paymentUrl, '_blank')
+          alert('Đang mở trang thanh toán PayPal. Vui lòng hoàn tất thanh toán và quay lại để cập nhật trạng thái.')
+        }
+      }
+    } catch (err) {
+      alert(err.message)
+    }
+  }
+
+  const showPaymentDialog = (orderId) => {
+    const dialog = document.createElement('div')
+    dialog.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    `
+
+    const content = document.createElement('div')
+    content.style.cssText = `
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 400px;
+      width: 90%;
+    `
+
+    content.innerHTML = `
+      <h3 style="margin: 0 0 15px 0;">Chọn phương thức thanh toán</h3>
+      <p style="margin: 0 0 15px 0; color: #6b7280;">Vui lòng chọn phương thức thanh toán:</p>
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
+        <button id="btn-cod" style="
+          padding: 12px;
+          border: 1px solid #d1d5db;
+          background: white;
+          border-radius: 4px;
+          cursor: pointer;
+          text-align: left;
+        ">
+          <div style="font-weight: bold;">💵 Thanh toán COD</div>
+          <div style="font-size: 12px; color: #6b7280;">Thanh toán khi nhận hàng</div>
+        </button>
+        <button id="btn-vnpay" style="
+          padding: 12px;
+          border: 1px solid #d1d5db;
+          background: white;
+          border-radius: 4px;
+          cursor: pointer;
+          text-align: left;
+        ">
+          <div style="font-weight: bold;">🏦 Thanh toán VNPAY</div>
+          <div style="font-size: 12px; color: #6b7280;">Thẻ ATM/Visa/Mastercard</div>
+        </button>
+        <button id="btn-paypal" style="
+          padding: 12px;
+          border: 1px solid #d1d5db;
+          background: white;
+          border-radius: 4px;
+          cursor: pointer;
+          text-align: left;
+        ">
+          <div style="font-weight: bold;">💳 Thanh toán PayPal</div>
+          <div style="font-size: 12px; color: #6b7280;">Thanh toán quốc tế</div>
+        </button>
+      </div>
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button id="btn-cancel" style="
+          padding: 8px 16px;
+          border: 1px solid #d1d5db;
+          background: white;
+          border-radius: 4px;
+          cursor: pointer;
+        ">Hủy</button>
+      </div>
+    `
+
+    content.querySelector('#btn-cod').addEventListener('click', () => {
+      thanhToanDonHang(orderId, 'COD')
+      document.body.removeChild(dialog)
+    })
+
+    content.querySelector('#btn-vnpay').addEventListener('click', () => {
+      thanhToanDonHang(orderId, 'VNPAY')
+      document.body.removeChild(dialog)
+    })
+
+    content.querySelector('#btn-paypal').addEventListener('click', () => {
+      thanhToanDonHang(orderId, 'PAYPAL')
+      document.body.removeChild(dialog)
+    })
+
+    content.querySelector('#btn-cancel').addEventListener('click', () => {
+      document.body.removeChild(dialog)
+    })
+
+    dialog.appendChild(content)
+    document.body.appendChild(dialog)
+
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) {
+        document.body.removeChild(dialog)
+      }
+    })
+  }
+
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '40px' }}>
@@ -424,23 +616,40 @@ function OrderTab() {
             <p style={{ fontSize: '18px', fontWeight: 'bold' }}>
               Tổng cộng: {formatCurrency(selectedOrder.tongTien)}
             </p>
-            {['CHO_XAC_NHAN', 'DA_XAC_NHAN'].includes(selectedOrder.trangThaiDonHang) && (
-              <button
-                style={{
-                  marginTop: '12px',
-                  padding: '8px 16px',
-                  backgroundColor: '#ef4444',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px'
-                }}
-                onClick={() => handleHuyDon(selectedOrder.id)}
-              >
-                Hủy đơn hàng
-              </button>
-            )}
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
+              {selectedOrder.trangThaiThanhToan === 'CHUA_THANH_TOAN' && (
+                <button
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#10b981',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }}
+                  onClick={() => showPaymentDialog(selectedOrder.id)}
+                >
+                  Thanh toán ngay
+                </button>
+              )}
+              {['CHO_XAC_NHAN', 'DA_XAC_NHAN'].includes(selectedOrder.trangThaiDonHang) && (
+                <button
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#ef4444',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }}
+                  onClick={() => handleHuyDon(selectedOrder.id)}
+                >
+                  Hủy đơn hàng
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -515,6 +724,25 @@ function OrderTab() {
                   {formatCurrency(order.tongTien)}
                 </span>
                 <div style={{ display: 'flex', gap: '8px' }}>
+                  {order.trangThaiThanhToan === 'CHUA_THANH_TOAN' && (
+                    <button
+                      style={{
+                        padding: '6px 12px',
+                        backgroundColor: '#10b981',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        showPaymentDialog(order.id)
+                      }}
+                    >
+                      Thanh toán
+                    </button>
+                  )}
                   {['CHO_XAC_NHAN', 'DA_XAC_NHAN'].includes(order.trangThaiDonHang) && (
                     <button
                       style={{
