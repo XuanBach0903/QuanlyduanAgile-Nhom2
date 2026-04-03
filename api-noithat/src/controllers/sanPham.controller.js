@@ -1,4 +1,10 @@
-//test: verify chức năng sau khi fix
+// CartScreen.js
+
+// TEST: thêm sản phẩm vào giỏ hàng addToCart(product)
+
+// BUG: không cập nhật số lượng khi thêm sản phẩm trùng
+
+
 
 const mongoose = require('mongoose');
 const SanPham = require('../models/SanPham');
