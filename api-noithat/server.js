@@ -15,6 +15,7 @@ const paymentRoutes = require('./src/routes/payment.routes');
 const chatRoutes = require('./src/routes/chat.routes');
 const danhGiaRoutes = require('./src/routes/danhGia.routes');
 const hoaDonRoutes = require('./src/routes/hoaDon.routes');
+const xacNhanGiaoHangRoutes = require('./src/routes/xacNhanGiaoHang.routes');
 // const thanhToanRoutes = require('./src/routes/thanhToan.routes'); // TODO: tạo file
 // const chatRoutes = require('./src/routes/chat.routes'); // TODO: tạo file
 // const danhGiaRoutes = require('./src/routes/danhGia.routes'); // TODO: tạo file
@@ -61,6 +62,7 @@ app.use('/payment', paymentRoutes);
 app.use('/chat', chatRoutes);
 app.use('/', danhGiaRoutes);
 app.use('/', hoaDonRoutes);
+app.use('/', xacNhanGiaoHangRoutes);
 // app.use('/', thanhToanRoutes);
 // app.use('/chat', chatRoutes);
 // app.use('/', danhGiaRoutes);
