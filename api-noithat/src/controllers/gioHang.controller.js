@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 const GioHang = require('../models/GioHang');
 const SanPham = require('../models/SanPham');
 
+// BUG: giỏ hàng không cập nhật số lượng khi thêm sản phẩm trùng
+
 function pickCover(sp) {
   const cover = sp?.hinh_dai_dien;
   if (typeof cover === 'string' && cover.trim() !== '') {
