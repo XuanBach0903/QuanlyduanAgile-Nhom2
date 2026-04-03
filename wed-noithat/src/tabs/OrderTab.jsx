@@ -130,6 +130,153 @@ function OrderTab() {
     }).format(amount)
   }
 
+  const huyDonHang = async (orderId, lyDo) => {
+    try {
+      const token = localStorage.getItem('adminToken')
+      
+      const response = await fetch(`${config.API_BASE_URL}/don-hang/${orderId}/huy`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ lyDo })
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Không thể hủy đơn hàng')
+      }
+
+      const data = await response.json()
+      alert(data.message || 'Đã hủy đơn hàng thành công')
+      fetchOrders() // Refresh danh sách
+    } catch (err) {
+      alert(err.message)
+    }
+  }
+
+  const handleHuyDon = (orderId) => {
+    const reasons = [
+      'Thay đổi ý định',
+      'Tìm được sản phẩm tốt hơn',
+      'Không còn nhu cầu',
+      'Vấn đề về thanh toán',
+      'Thời gian giao hàng quá lâu',
+      'Lý do khác'
+    ]
+
+    let selectedReason = reasons[0]
+    let customReason = ''
+
+    const dialog = document.createElement('div')
+    dialog.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    `
+
+    const content = document.createElement('div')
+    content.style.cssText = `
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 400px;
+      width: 90%;
+    `
+
+    content.innerHTML = `
+      <h3 style="margin: 0 0 15px 0;">Hủy đơn hàng</h3>
+      <p style="margin: 0 0 15px 0; color: #6b7280;">Vui lòng chọn lý do hủy đơn:</p>
+      <div id="reason-list" style="margin-bottom: 15px;"></div>
+      <input type="text" id="custom-reason" placeholder="Nhập lý do khác" style="
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        display: none;
+      ">
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button id="btn-cancel" style="
+          padding: 8px 16px;
+          border: 1px solid #d1d5db;
+          background: white;
+          border-radius: 4px;
+          cursor: pointer;
+        ">Đóng</button>
+        <button id="btn-confirm" style="
+          padding: 8px 16px;
+          border: none;
+          background: #ef4444;
+          color: white;
+          border-radius: 4px;
+          cursor: pointer;
+        ">Hủy đơn</button>
+      </div>
+    `
+
+    const reasonList = content.querySelector('#reason-list')
+    const customReasonInput = content.querySelector('#custom-reason')
+    
+    reasons.forEach((reason, index) => {
+      const radioDiv = document.createElement('div')
+      radioDiv.style.cssText = 'margin-bottom: 8px;'
+      radioDiv.innerHTML = `
+        <label style="display: flex; align-items: center; cursor: pointer;">
+          <input type="radio" name="reason" value="${reason}" ${index === 0 ? 'checked' : ''} style="margin-right: 8px;">
+          <span>${reason}</span>
+        </label>
+      `
+      reasonList.appendChild(radioDiv)
+    })
+
+    const radios = reasonList.querySelectorAll('input[type="radio"]')
+    radios.forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        selectedReason = e.target.value
+        customReasonInput.style.display = selectedReason === 'Lý do khác' ? 'block' : 'none'
+      })
+    })
+
+    content.querySelector('#btn-cancel').addEventListener('click', () => {
+      document.body.removeChild(dialog)
+    })
+
+    content.querySelector('#btn-confirm').addEventListener('click', () => {
+      let finalReason = selectedReason
+      if (selectedReason === 'Lý do khác') {
+        customReason = customReasonInput.value.trim()
+        if (!customReason) {
+          alert('Vui lòng nhập lý do hủy đơn')
+          return
+        }
+        finalReason = customReason
+      }
+      
+      if (confirm(`Bạn có chắc chắn muốn hủy đơn hàng với lý do: "${finalReason}"?`)) {
+        huyDonHang(orderId, finalReason)
+        document.body.removeChild(dialog)
+      }
+    })
+
+    dialog.appendChild(content)
+    document.body.appendChild(dialog)
+
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) {
+        document.body.removeChild(dialog)
+      }
+    })
+  }
+
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '40px' }}>
@@ -277,6 +424,23 @@ function OrderTab() {
             <p style={{ fontSize: '18px', fontWeight: 'bold' }}>
               Tổng cộng: {formatCurrency(selectedOrder.tongTien)}
             </p>
+            {['CHO_XAC_NHAN', 'DA_XAC_NHAN'].includes(selectedOrder.trangThaiDonHang) && (
+              <button
+                style={{
+                  marginTop: '12px',
+                  padding: '8px 16px',
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+                onClick={() => handleHuyDon(selectedOrder.id)}
+              >
+                Hủy đơn hàng
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -350,23 +514,44 @@ function OrderTab() {
                 <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#111827' }}>
                   {formatCurrency(order.tongTien)}
                 </span>
-                <button
-                  style={{
-                    padding: '6px 12px',
-                    backgroundColor: '#3b82f6',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '12px'
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    fetchOrderDetail(order.id)
-                  }}
-                >
-                  Xem chi tiết
-                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {['CHO_XAC_NHAN', 'DA_XAC_NHAN'].includes(order.trangThaiDonHang) && (
+                    <button
+                      style={{
+                        padding: '6px 12px',
+                        backgroundColor: '#ef4444',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleHuyDon(order.id)
+                      }}
+                    >
+                      Hủy đơn
+                    </button>
+                  )}
+                  <button
+                    style={{
+                      padding: '6px 12px',
+                      backgroundColor: '#3b82f6',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '12px'
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      fetchOrderDetail(order.id)
+                    }}
+                  >
+                    Xem chi tiết
+                  </button>
+                </div>
               </div>
             </div>
           ))}
