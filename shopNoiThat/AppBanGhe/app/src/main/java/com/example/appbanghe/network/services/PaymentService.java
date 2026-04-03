@@ -31,6 +31,9 @@ public interface PaymentService {
         @Query("limit") int limit
     );
 
+    @GET("payment/statistics")
+    Call<JsonObject> getPaymentStatistics();
+
     // Legacy API - Keep for compatibility
     @POST("thanh-toan/visa")
     Call<JsonObject> thanhToanVisa(@Body VisaPaymentRequest body);

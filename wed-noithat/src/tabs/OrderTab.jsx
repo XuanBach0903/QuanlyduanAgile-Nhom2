@@ -469,6 +469,160 @@ function OrderTab() {
     })
   }
 
+  const xemTrangThaiThanhToan = async (orderId) => {
+    try {
+      const token = localStorage.getItem('adminToken')
+      
+      const response = await fetch(`${config.API_BASE_URL}/payment/status/${orderId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Không thể tải trạng thái thanh toán')
+      }
+
+      const data = await response.json()
+      showPaymentStatusDialog(data)
+    } catch (err) {
+      alert(err.message)
+    }
+  }
+
+  const showPaymentStatusDialog = (paymentInfo) => {
+    const dialog = document.createElement('div')
+    dialog.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    `
+
+    const content = document.createElement('div')
+    content.style.cssText = `
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    `
+
+    const statusColor = {
+      'DA_THANH_TOAN': '#10b981',
+      'CHUA_THANH_TOAN': '#f59e0b',
+      'DANG_XU_LY': '#3b82f6',
+      'THAT_BAI': '#ef4444',
+      'HET_HAN': '#ef4444'
+    }[paymentInfo.paymentStatus] || '#6b7280'
+
+    const statusText = {
+      'DA_THANH_TOAN': 'Đã thanh toán',
+      'CHUA_THANH_TOAN': 'Chưa thanh toán',
+      'DANG_XU_LY': 'Đang xử lý',
+      'THAT_BAI': 'Thất bại',
+      'HET_HAN': 'Hết hạn'
+    }[paymentInfo.paymentStatus] || paymentInfo.paymentStatus
+
+    const methodText = {
+      'COD': 'Thanh toán khi nhận hàng',
+      'VNPAY': 'Ví điện tử VNPAY',
+      'VISA': 'Thẻ Visa/Mastercard',
+      'PAYPAL': 'PayPal'
+    }[paymentInfo.paymentMethod] || paymentInfo.paymentMethod
+
+    content.innerHTML = `
+      <h3 style="margin: 0 0 20px 0; color: #111827;">Trạng thái thanh toán</h3>
+      
+      <div style="display: grid; gap: 16px;">
+        <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="color: #6b7280;">Mã đơn hàng:</span>
+          <span style="font-weight: 600;">#${paymentInfo.orderId}</span>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="color: #6b7280;">Phương thức:</span>
+          <span style="font-weight: 600;">${methodText}</span>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="color: #6b7280;">Trạng thái:</span>
+          <span style="font-weight: 600; color: ${statusColor};">${statusText}</span>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="color: #6b7280;">Số tiền:</span>
+          <span style="font-weight: 600; color: #111827;">${formatCurrency(paymentInfo.amount)}</span>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="color: #6b7280;">Ngày đặt hàng:</span>
+          <span style="font-weight: 600;">${new Date(paymentInfo.orderDate).toLocaleString('vi-VN')}</span>
+        </div>
+        
+        ${paymentInfo.transactionId ? `
+        <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="color: #6b7280;">Mã giao dịch:</span>
+          <span style="font-weight: 600; font-family: monospace;">${paymentInfo.transactionId}</span>
+        </div>
+        ` : ''}
+      </div>
+      
+      <div style="margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end;">
+        ${paymentInfo.paymentStatus === 'CHUA_THANH_TOAN' ? `
+          <button id="btn-pay-now" style="
+            padding: 10px 20px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+          ">Thanh toán ngay</button>
+        ` : ''}
+        
+        <button id="btn-close" style="
+          padding: 10px 20px;
+          background: #f3f4f6;
+          color: #374151;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          cursor: pointer;
+          font-weight: 600;
+        ">Đóng</button>
+      </div>
+    `
+
+    content.querySelector('#btn-close').addEventListener('click', () => {
+      document.body.removeChild(dialog)
+    })
+
+    if (paymentInfo.paymentStatus === 'CHUA_THANH_TOAN') {
+      content.querySelector('#btn-pay-now').addEventListener('click', () => {
+        document.body.removeChild(dialog)
+        showPaymentDialog(paymentInfo.orderId)
+      })
+    }
+
+    dialog.appendChild(content)
+    document.body.appendChild(dialog)
+
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) {
+        document.body.removeChild(dialog)
+      }
+    })
+  }
+
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '40px' }}>
@@ -617,6 +771,20 @@ function OrderTab() {
               Tổng cộng: {formatCurrency(selectedOrder.tongTien)}
             </p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
+              <button
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#6366f1',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+                onClick={() => xemTrangThaiThanhToan(selectedOrder.id)}
+              >
+                Xem trạng thái thanh toán
+              </button>
               {selectedOrder.trangThaiThanhToan === 'CHUA_THANH_TOAN' && (
                 <button
                   style={{
@@ -743,6 +911,23 @@ function OrderTab() {
                       Thanh toán
                     </button>
                   )}
+                  <button
+                    style={{
+                      padding: '6px 12px',
+                      backgroundColor: '#3b82f6',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '12px'
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      xemTrangThaiThanhToan(order.id)
+                    }}
+                  >
+                    Trạng thái
+                  </button>
                   {['CHO_XAC_NHAN', 'DA_XAC_NHAN'].includes(order.trangThaiDonHang) && (
                     <button
                       style={{

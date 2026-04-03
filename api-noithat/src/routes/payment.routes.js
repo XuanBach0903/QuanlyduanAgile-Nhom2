@@ -277,4 +277,52 @@ router.get('/history', requireAuth, async (req, res, next) => {
   }
 });
 
+// Lấy thống kê thanh toán
+router.get('/statistics', requireAuth, async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    const stats = await DonHang.aggregate([
+      { $match: { nguoi_dung_id: new mongoose.Types.ObjectId(userId) } },
+      {
+        $group: {
+          _id: null,
+          tong_tien: { $sum: '$tong_tien' },
+          so_thanh_toan_hoan_tat: {
+            $sum: { $cond: [{ $eq: ['$trang_thai_thanh_toan', 'DA_THANH_TOAN'] }, 1, 0] }
+          },
+          so_thanh_toan_dang_xu_ly: {
+            $sum: { $cond: [{ $eq: ['$trang_thai_thanh_toan', 'DANG_XU_LY'] }, 1, 0] }
+          },
+          so_thanh_toan_that_bai: {
+            $sum: { $cond: [{ $eq: ['$trang_thai_thanh_toan', 'THAT_BAI'] }, 1, 0] }
+          },
+          thanh_toan_hom_nay: {
+            $sum: {
+              $cond: [
+                { $gte: ['$ngay_tao', new Date(new Date().setHours(0, 0, 0, 0))] },
+                { $cond: [{ $eq: ['$trang_thai_thanh_toan', 'DA_THANH_TOAN'] }, 1, 0] },
+                0
+              ]
+            }
+          }
+        }
+      }
+    ]);
+
+    res.json({
+      success: true,
+      data: stats[0] || {
+        tong_tien: 0,
+        so_thanh_toan_hoan_tat: 0,
+        so_thanh_toan_dang_xu_ly: 0,
+        so_thanh_toan_that_bai: 0,
+        thanh_toan_hom_nay: 0
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
