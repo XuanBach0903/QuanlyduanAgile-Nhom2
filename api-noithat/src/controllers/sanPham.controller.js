@@ -1,10 +1,4 @@
-// CartScreen.js
-
-// TEST: thêm sản phẩm vào giỏ hàng addToCart(product)
-
-// BUG: không cập nhật số lượng khi thêm sản phẩm trùng
-
-
+//test: verify chức năng sau khi fix
 
 const mongoose = require('mongoose');
 const SanPham = require('../models/SanPham');
@@ -46,10 +40,19 @@ async function getSanPhamList(req, res, next) {
       filter.danh_muc_id = danhMucId;
     }
 
-    // Text search
+    // Text search - improved to handle Vietnamese characters and search in multiple fields
     if (tuKhoa && tuKhoa.trim() !== '') {
-      const regex = new RegExp(tuKhoa.trim(), 'i');
-      filter.ten = regex;
+      const searchTerm = tuKhoa.trim();
+      // Escape special regex characters but keep Vietnamese characters
+      const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(escapedTerm, 'i');
+      
+      // Search in multiple fields: product name, description, material
+      filter.$or = [
+        { ten: regex },
+        { mo_ta: regex },
+        { chat_lieu: regex }
+      ];
     }
 
     // Price range filter

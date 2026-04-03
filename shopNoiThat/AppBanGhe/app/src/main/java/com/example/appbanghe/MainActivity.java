@@ -270,6 +270,9 @@ public class MainActivity extends AppCompatActivity {
             }
             if (isSearch) {
                 keyword = String.valueOf(etSearch.getText()).trim();
+                // Reset to first page when searching
+                page = 1;
+                totalPages = Integer.MAX_VALUE;
                 refreshProducts();
                 return true;
             }
@@ -296,6 +299,9 @@ public class MainActivity extends AppCompatActivity {
                 searchRunnable = () -> {
                     if (!v.equals(keyword)) {
                         keyword = v;
+                        // Reset to first page when searching
+                        page = 1;
+                        totalPages = Integer.MAX_VALUE;
                         refreshProducts();
                     }
                 };

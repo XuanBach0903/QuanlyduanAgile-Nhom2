@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import './App.css'
 import { CategoryTab } from './tabs/CategoryTab.jsx'
 import { ProductTab } from './tabs/ProductTab.jsx'
+import { OrderTab } from './tabs/OrderTab.jsx'
 import { LoginPage } from './LoginPage.jsx'
 import { RegisterPage } from './RegisterPage.jsx'
 import { SearchPage } from './SearchPage.jsx'
@@ -120,12 +121,19 @@ function App() {
           >
             Tìm Kiếm
           </button>
+          <button
+            className={`tab-btn ${activeTab === 'orders' ? 'active' : ''}`}
+            onClick={() => setActiveTab('orders')}
+          >
+            Đơn Hàng
+          </button>
         </div>
       </header>
       <main className="app-main">
         {activeTab === 'categories' && <CategoryTab />}
         {activeTab === 'products' && <ProductTab />}
         {activeTab === 'search' && <SearchPage />}
+        {activeTab === 'orders' && <OrderTab />}
       </main>
     </div>
   )
