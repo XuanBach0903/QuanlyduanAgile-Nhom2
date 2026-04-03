@@ -1,4 +1,4 @@
-//test: verify chức năng sau khi fix
+//bug: thanh toán visa bị lỗi
 
 const mongoose = require('mongoose');
 const SanPham = require('../models/SanPham');
