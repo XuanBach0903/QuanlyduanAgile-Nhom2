@@ -24,6 +24,14 @@ async function taoDanhMuc(req, res, next) {
     if (!ten) {
       return res.status(400).json({ message: 'Ten danh muc la bat buoc' });
     }
+    // Kiểm tra trùng tên (không phân biệt hoa thường)
+    const existingName = await DanhMuc.findOne({
+      ten: { $regex: new RegExp('^' + ten + '$', 'i') }
+    });
+    if (existingName) {
+      return res.status(400).json({ message: 'Tên danh mục đã tồn tại' });
+    }
+
     const slug = ten
       .toString()
       .toLowerCase()
@@ -60,6 +68,15 @@ async function capNhatDanhMuc(req, res, next) {
     }
 
     if (ten) {
+      // Kiểm tra trùng tên khi cập nhật (không phân biệt hoa thường, trừ chính nó)
+      const existingName = await DanhMuc.findOne({
+        _id: { $ne: id },
+        ten: { $regex: new RegExp('^' + ten + '$', 'i') }
+      });
+      if (existingName) {
+        return res.status(400).json({ message: 'Tên danh mục đã tồn tại' });
+      }
+
       dm.ten = ten;
       dm.slug = ten
         .toString()
