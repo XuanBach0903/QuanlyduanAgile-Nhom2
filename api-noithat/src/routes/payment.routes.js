@@ -325,4 +325,69 @@ router.get('/statistics', requireAuth, async (req, res, next) => {
   }
 });
 
+// Xử lý thanh toán Visa (legacy endpoint cho app Android)
+router.post('/visa', requireAuth, async (req, res, next) => {
+  try {
+    const { donHangId, soThe, tenChuThe, thangHetHan, namHetHan, cvv } = req.body;
+
+    if (!donHangId || !soThe || !tenChuThe || !cvv) {
+      return res.status(400).json({ message: 'Thiếu thông tin thanh toán Visa' });
+    }
+
+    // Kiểm tra đơn hàng tồn tại
+    const donHang = await DonHang.findOne({ _id: donHangId, nguoi_dung_id: req.user.id });
+    if (!donHang) {
+      return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+    }
+
+    // Validate thông tin thẻ
+    const cardNumber = soThe.replace(/\s/g, '');
+    if (cardNumber.length < 13 || cardNumber.length > 19) {
+      return res.status(400).json({ message: 'Số thẻ không hợp lệ' });
+    }
+
+    // Kiểm tra ngày hết hạn
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+
+    if (namHetHan < currentYear || (namHetHan === currentYear && thangHetHan < currentMonth)) {
+      return res.status(400).json({ message: 'Thẻ đã hết hạn' });
+    }
+
+    // Giả lập xử lý thanh toán Visa (trong thực tế sẽ gọi payment gateway)
+    const isPaymentSuccessful = true; // Giả lập thành công
+
+    if (isPaymentSuccessful) {
+      // Cập nhật trạng thái đơn hàng
+      donHang.trang_thai_thanh_toan = 'DA_THANH_TOAN';
+      donHang.phuong_thuc_thanh_toan = 'VISA';
+      donHang.ngay_cap_nhat = new Date();
+      await donHang.save();
+
+      res.json({
+        success: true,
+        message: 'Thanh toán Visa thành công',
+        data: {
+          donHangId: donHangId,
+          trangThai: 'DA_THANH_TOAN',
+          soTien: donHang.tong_tien,
+          phuongThuc: 'VISA',
+          maGiaoDich: 'VISA_' + Date.now()
+        }
+      });
+    } else {
+      donHang.trang_thai_thanh_toan = 'THAT_BAI';
+      await donHang.save();
+
+      res.status(400).json({
+        success: false,
+        message: 'Thanh toán Visa thất bại'
+      });
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
