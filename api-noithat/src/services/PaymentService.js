@@ -14,7 +14,7 @@ class PaymentService {
   createVnpayPaymentUrl(orderId, amount, orderInfo, ipAddr) {
     const date = new Date();
     const createDate = this.formatDate(date, 'yyyyMMddHHmmss');
-    const orderId = `ORDER${orderId}${date.getTime()}`;
+    const vnpayOrderId = `ORDER${orderId}${date.getTime()}`;
     
     const params = {
       vnp_Version: '2.1.0',
@@ -22,7 +22,7 @@ class PaymentService {
       vnp_TmnCode: this.vnpayConfig.vnp_TmnCode,
       vnp_Locale: 'vn',
       vnp_CurrCode: 'VND',
-      vnp_TxnRef: orderId,
+      vnp_TxnRef: vnpayOrderId,
       vnp_OrderInfo: orderInfo,
       vnp_OrderType: 'billpayment',
       vnp_Amount: amount * 100, // VNPAY yêu cầu số tiền * 100
