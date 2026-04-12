@@ -1,40 +1,67 @@
 import React, { useState, useEffect } from 'react'
-import { config } from '../config'
+import { API_BASE_URL } from '../config.js'
+
+// Màu sắc chính
+const COLORS = {
+  primary: '#4f46e5',
+  success: '#10b981',
+  danger: '#ef4444',
+  warning: '#f59e0b',
+  info: '#3b82f6',
+  gray: '#6b7280',
+  grayLight: '#f3f4f6',
+  border: '#e5e7eb'
+}
+
+// Trạng thái đơn hàng
+const ORDER_STATUS = {
+  CHO_XAC_NHAN: { color: COLORS.warning, text: 'Chờ xác nhận' },
+  DA_XAC_NHAN: { color: COLORS.info, text: 'Đã xác nhận' },
+  DANG_GIAO: { color: COLORS.primary, text: 'Đang giao' },
+  DA_GIAO: { color: COLORS.success, text: 'Đã giao' },
+  THANH_CONG: { color: COLORS.success, text: 'Thành công' },
+  HUY: { color: COLORS.danger, text: 'Đã hủy' }
+}
+
+const PAYMENT_STATUS = {
+  CHUA_THANH_TOAN: 'Chưa thanh toán',
+  DA_THANH_TOAN: 'Đã thanh toán'
+}
 
 function OrderTab() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedOrder, setSelectedOrder] = useState(null)
-  const [showDetail, setShowDetail] = useState(false)
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
+  const [toast, setToast] = useState(null)
 
   useEffect(() => {
     fetchOrders()
   }, [])
 
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type })
+    setTimeout(() => setToast(null), 3000)
+  }
+
   const fetchOrders = async () => {
     try {
       setLoading(true)
       const token = localStorage.getItem('adminToken')
-      
       if (!token) {
-        setError('Bạn cần đăng nhập để xem đơn hàng')
+        setError('Bạn cần đăng nhập')
         setLoading(false)
         return
       }
 
-      const response = await fetch(`${config.API_BASE_URL}/don-hang`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+      const res = await fetch(`${API_BASE_URL}/don-hang`, {
+        headers: { 'Authorization': `Bearer ${token}` }
       })
 
-      if (!response.ok) {
-        throw new Error('Không thể tải danh sách đơn hàng')
-      }
-
-      const data = await response.json()
+      if (!res.ok) throw new Error('Không thể tải đơn hàng')
+      const data = await res.json()
       setOrders(data)
     } catch (err) {
       setError(err.message)
@@ -46,603 +73,100 @@ function OrderTab() {
   const fetchOrderDetail = async (orderId) => {
     try {
       const token = localStorage.getItem('adminToken')
-      
-      const response = await fetch(`${config.API_BASE_URL}/don-hang/${orderId}`, {
+      const res = await fetch(`${API_BASE_URL}/don-hang/${orderId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+
+      if (!res.ok) throw new Error('Không thể tải chi tiết')
+      const data = await res.json()
+      setSelectedOrder(data)
+    } catch (err) {
+      showToast(err.message, 'error')
+    }
+  }
+
+  const cancelOrder = async () => {
+    if (!cancelReason.trim()) {
+      showToast('Vui lòng nhập lý do hủy', 'error')
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('adminToken')
+      const res = await fetch(`${API_BASE_URL}/don-hang/${selectedOrder.id}/huy`, {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({ lyDo: cancelReason })
       })
 
-      if (!response.ok) {
-        throw new Error('Không thể tải chi tiết đơn hàng')
-      }
+      if (!res.ok) throw new Error('Hủy đơn hàng thất bại')
 
-      const data = await response.json()
-      setSelectedOrder(data)
-      setShowDetail(true)
+      showToast('Đã hủy đơn hàng thành công')
+      setShowCancelModal(false)
+      setCancelReason('')
+      setSelectedOrder(null)
+      fetchOrders()
     } catch (err) {
-      setError(err.message)
+      showToast(err.message, 'error')
     }
   }
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'CHO_XAC_NHAN':
-        return '#f59e0b'
-      case 'DA_XAC_NHAN':
-        return '#3b82f6'
-      case 'DANG_GIAO':
-        return '#8b5cf6'
-      case 'DA_GIAO_CHO_XAC_NHAN':
-        return '#06b6d4'
-      case 'THANH_CONG':
-        return '#10b981'
-      case 'HUY':
-        return '#ef4444'
-      case 'CHO_XU_LY_HOAN':
-        return '#f97316'
-      default:
-        return '#6b7280'
-    }
-  }
-
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'CHO_XAC_NHAN':
-        return 'Chờ xác nhận'
-      case 'DA_XAC_NHAN':
-        return 'Đã xác nhận'
-      case 'DANG_GIAO':
-        return 'Đang giao'
-      case 'DA_GIAO_CHO_XAC_NHAN':
-        return 'Đã giao - Chờ xác nhận'
-      case 'THANH_CONG':
-        return 'Thành công'
-      case 'HUY':
-        return 'Đã hủy'
-      case 'CHO_XU_LY_HOAN':
-        return 'Chờ xử lý hoàn'
-      default:
-        return status
-    }
-  }
-
-  const getPaymentStatusText = (status) => {
-    switch (status) {
-      case 'CHUA_THANH_TOAN':
-        return 'Chưa thanh toán'
-      case 'DA_THANH_TOAN':
-        return 'Đã thanh toán'
-      default:
-        return status
-    }
-  }
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString('vi-VN')
-  }
-
-  const formatCurrency = (amount) => {
+  const formatMoney = (amount) => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND'
     }).format(amount)
   }
 
-  const huyDonHang = async (orderId, lyDo) => {
-    try {
-      const token = localStorage.getItem('adminToken')
-      
-      const response = await fetch(`${config.API_BASE_URL}/don-hang/${orderId}/huy`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ lyDo })
-      })
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString('vi-VN')
+  }
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Không thể hủy đơn hàng')
-      }
-
-      const data = await response.json()
-      alert(data.message || 'Đã hủy đơn hàng thành công')
-      fetchOrders() // Refresh danh sách
-    } catch (err) {
-      alert(err.message)
+  const getStatusStyle = (status) => {
+    const config = ORDER_STATUS[status] || { color: COLORS.gray, text: status }
+    return {
+      backgroundColor: config.color,
+      color: 'white',
+      padding: '4px 12px',
+      borderRadius: '20px',
+      fontSize: '12px',
+      fontWeight: 500
     }
-  }
-
-  const handleHuyDon = (orderId) => {
-    const reasons = [
-      'Thay đổi ý định',
-      'Tìm được sản phẩm tốt hơn',
-      'Không còn nhu cầu',
-      'Vấn đề về thanh toán',
-      'Thời gian giao hàng quá lâu',
-      'Lý do khác'
-    ]
-
-    let selectedReason = reasons[0]
-    let customReason = ''
-
-    const dialog = document.createElement('div')
-    dialog.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    `
-
-    const content = document.createElement('div')
-    content.style.cssText = `
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      max-width: 400px;
-      width: 90%;
-    `
-
-    content.innerHTML = `
-      <h3 style="margin: 0 0 15px 0;">Hủy đơn hàng</h3>
-      <p style="margin: 0 0 15px 0; color: #6b7280;">Vui lòng chọn lý do hủy đơn:</p>
-      <div id="reason-list" style="margin-bottom: 15px;"></div>
-      <input type="text" id="custom-reason" placeholder="Nhập lý do khác" style="
-        width: 100%;
-        padding: 8px;
-        border: 1px solid #d1d5db;
-        border-radius: 4px;
-        margin-bottom: 15px;
-        display: none;
-      ">
-      <div style="display: flex; gap: 10px; justify-content: flex-end;">
-        <button id="btn-cancel" style="
-          padding: 8px 16px;
-          border: 1px solid #d1d5db;
-          background: white;
-          border-radius: 4px;
-          cursor: pointer;
-        ">Đóng</button>
-        <button id="btn-confirm" style="
-          padding: 8px 16px;
-          border: none;
-          background: #ef4444;
-          color: white;
-          border-radius: 4px;
-          cursor: pointer;
-        ">Hủy đơn</button>
-      </div>
-    `
-
-    const reasonList = content.querySelector('#reason-list')
-    const customReasonInput = content.querySelector('#custom-reason')
-    
-    reasons.forEach((reason, index) => {
-      const radioDiv = document.createElement('div')
-      radioDiv.style.cssText = 'margin-bottom: 8px;'
-      radioDiv.innerHTML = `
-        <label style="display: flex; align-items: center; cursor: pointer;">
-          <input type="radio" name="reason" value="${reason}" ${index === 0 ? 'checked' : ''} style="margin-right: 8px;">
-          <span>${reason}</span>
-        </label>
-      `
-      reasonList.appendChild(radioDiv)
-    })
-
-    const radios = reasonList.querySelectorAll('input[type="radio"]')
-    radios.forEach(radio => {
-      radio.addEventListener('change', (e) => {
-        selectedReason = e.target.value
-        customReasonInput.style.display = selectedReason === 'Lý do khác' ? 'block' : 'none'
-      })
-    })
-
-    content.querySelector('#btn-cancel').addEventListener('click', () => {
-      document.body.removeChild(dialog)
-    })
-
-    content.querySelector('#btn-confirm').addEventListener('click', () => {
-      let finalReason = selectedReason
-      if (selectedReason === 'Lý do khác') {
-        customReason = customReasonInput.value.trim()
-        if (!customReason) {
-          alert('Vui lòng nhập lý do hủy đơn')
-          return
-        }
-        finalReason = customReason
-      }
-      
-      if (confirm(`Bạn có chắc chắn muốn hủy đơn hàng với lý do: "${finalReason}"?`)) {
-        huyDonHang(orderId, finalReason)
-        document.body.removeChild(dialog)
-      }
-    })
-
-    dialog.appendChild(content)
-    document.body.appendChild(dialog)
-
-    dialog.addEventListener('click', (e) => {
-      if (e.target === dialog) {
-        document.body.removeChild(dialog)
-      }
-    })
-  }
-
-  const thanhToanDonHang = async (orderId, phuongThuc) => {
-    try {
-      const token = localStorage.getItem('adminToken')
-      
-      if (phuongThuc === 'COD') {
-        // Xử lý thanh toán COD
-        const response = await fetch(`${config.API_BASE_URL}/payment/cod/confirm`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ 
-            orderId: orderId,
-            amount: selectedOrder?.tongTien || 0,
-            orderInfo: `Thanh toán COD đơn hàng ${orderId}`
-          })
-        })
-
-        if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.message || 'Không thể xác nhận thanh toán COD')
-        }
-
-        const data = await response.json()
-        alert(data.message || 'Đã xác nhận thanh toán COD thành công')
-        fetchOrders()
-        setShowDetail(false)
-      } else if (phuongThuc === 'VNPAY') {
-        // Tạo URL thanh toán VNPAY
-        const response = await fetch(`${config.API_BASE_URL}/payment/vnpay/create`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ 
-            orderId: orderId,
-            amount: selectedOrder?.tongTien || 0,
-            orderInfo: `Thanh toán VNPAY đơn hàng ${orderId}`,
-            returnUrl: `${window.location.origin}/payment/success`,
-            ipAddr: '127.0.0.1'
-          })
-        })
-
-        if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.message || 'Không thể tạo thanh toán VNPAY')
-        }
-
-        const data = await response.json()
-        if (data.paymentUrl) {
-          // Chuyển hướng đến trang thanh toán VNPAY
-          window.open(data.paymentUrl, '_blank')
-          alert('Đang mở trang thanh toán VNPAY. Vui lòng hoàn tất thanh toán và quay lại để cập nhật trạng thái.')
-        }
-      } else if (phuongThuc === 'PAYPAL') {
-        // Tạo URL thanh toán PayPal
-        const response = await fetch(`${config.API_BASE_URL}/payment/paypal/create`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ 
-            orderId: orderId,
-            amount: selectedOrder?.tongTien || 0,
-            orderInfo: `Thanh toán PayPal đơn hàng ${orderId}`,
-            returnUrl: `${window.location.origin}/payment/success`,
-            cancelUrl: `${window.location.origin}/payment/cancel`
-          })
-        })
-
-        if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.message || 'Không thể tạo thanh toán PayPal')
-        }
-
-        const data = await response.json()
-        if (data.paymentUrl) {
-          // Chuyển hướng đến trang thanh toán PayPal
-          window.open(data.paymentUrl, '_blank')
-          alert('Đang mở trang thanh toán PayPal. Vui lòng hoàn tất thanh toán và quay lại để cập nhật trạng thái.')
-        }
-      }
-    } catch (err) {
-      alert(err.message)
-    }
-  }
-
-  const showPaymentDialog = (orderId) => {
-    const dialog = document.createElement('div')
-    dialog.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    `
-
-    const content = document.createElement('div')
-    content.style.cssText = `
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      max-width: 400px;
-      width: 90%;
-    `
-
-    content.innerHTML = `
-      <h3 style="margin: 0 0 15px 0;">Chọn phương thức thanh toán</h3>
-      <p style="margin: 0 0 15px 0; color: #6b7280;">Vui lòng chọn phương thức thanh toán:</p>
-      <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
-        <button id="btn-cod" style="
-          padding: 12px;
-          border: 1px solid #d1d5db;
-          background: white;
-          border-radius: 4px;
-          cursor: pointer;
-          text-align: left;
-        ">
-          <div style="font-weight: bold;">💵 Thanh toán COD</div>
-          <div style="font-size: 12px; color: #6b7280;">Thanh toán khi nhận hàng</div>
-        </button>
-        <button id="btn-vnpay" style="
-          padding: 12px;
-          border: 1px solid #d1d5db;
-          background: white;
-          border-radius: 4px;
-          cursor: pointer;
-          text-align: left;
-        ">
-          <div style="font-weight: bold;">🏦 Thanh toán VNPAY</div>
-          <div style="font-size: 12px; color: #6b7280;">Thẻ ATM/Visa/Mastercard</div>
-        </button>
-        <button id="btn-paypal" style="
-          padding: 12px;
-          border: 1px solid #d1d5db;
-          background: white;
-          border-radius: 4px;
-          cursor: pointer;
-          text-align: left;
-        ">
-          <div style="font-weight: bold;">💳 Thanh toán PayPal</div>
-          <div style="font-size: 12px; color: #6b7280;">Thanh toán quốc tế</div>
-        </button>
-      </div>
-      <div style="display: flex; gap: 10px; justify-content: flex-end;">
-        <button id="btn-cancel" style="
-          padding: 8px 16px;
-          border: 1px solid #d1d5db;
-          background: white;
-          border-radius: 4px;
-          cursor: pointer;
-        ">Hủy</button>
-      </div>
-    `
-
-    content.querySelector('#btn-cod').addEventListener('click', () => {
-      thanhToanDonHang(orderId, 'COD')
-      document.body.removeChild(dialog)
-    })
-
-    content.querySelector('#btn-vnpay').addEventListener('click', () => {
-      thanhToanDonHang(orderId, 'VNPAY')
-      document.body.removeChild(dialog)
-    })
-
-    content.querySelector('#btn-paypal').addEventListener('click', () => {
-      thanhToanDonHang(orderId, 'PAYPAL')
-      document.body.removeChild(dialog)
-    })
-
-    content.querySelector('#btn-cancel').addEventListener('click', () => {
-      document.body.removeChild(dialog)
-    })
-
-    dialog.appendChild(content)
-    document.body.appendChild(dialog)
-
-    dialog.addEventListener('click', (e) => {
-      if (e.target === dialog) {
-        document.body.removeChild(dialog)
-      }
-    })
-  }
-
-  const xemTrangThaiThanhToan = async (orderId) => {
-    try {
-      const token = localStorage.getItem('adminToken')
-      
-      const response = await fetch(`${config.API_BASE_URL}/payment/status/${orderId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Không thể tải trạng thái thanh toán')
-      }
-
-      const data = await response.json()
-      showPaymentStatusDialog(data)
-    } catch (err) {
-      alert(err.message)
-    }
-  }
-
-  const showPaymentStatusDialog = (paymentInfo) => {
-    const dialog = document.createElement('div')
-    dialog.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    `
-
-    const content = document.createElement('div')
-    content.style.cssText = `
-      background: white;
-      padding: 24px;
-      border-radius: 12px;
-      max-width: 500px;
-      width: 90%;
-      max-height: 80vh;
-      overflow-y: auto;
-    `
-
-    const statusColor = {
-      'DA_THANH_TOAN': '#10b981',
-      'CHUA_THANH_TOAN': '#f59e0b',
-      'DANG_XU_LY': '#3b82f6',
-      'THAT_BAI': '#ef4444',
-      'HET_HAN': '#ef4444'
-    }[paymentInfo.paymentStatus] || '#6b7280'
-
-    const statusText = {
-      'DA_THANH_TOAN': 'Đã thanh toán',
-      'CHUA_THANH_TOAN': 'Chưa thanh toán',
-      'DANG_XU_LY': 'Đang xử lý',
-      'THAT_BAI': 'Thất bại',
-      'HET_HAN': 'Hết hạn'
-    }[paymentInfo.paymentStatus] || paymentInfo.paymentStatus
-
-    const methodText = {
-      'COD': 'Thanh toán khi nhận hàng',
-      'VNPAY': 'Ví điện tử VNPAY',
-      'VISA': 'Thẻ Visa/Mastercard',
-      'PAYPAL': 'PayPal'
-    }[paymentInfo.paymentMethod] || paymentInfo.paymentMethod
-
-    content.innerHTML = `
-      <h3 style="margin: 0 0 20px 0; color: #111827;">Trạng thái thanh toán</h3>
-      
-      <div style="display: grid; gap: 16px;">
-        <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
-          <span style="color: #6b7280;">Mã đơn hàng:</span>
-          <span style="font-weight: 600;">#${paymentInfo.orderId}</span>
-        </div>
-        
-        <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
-          <span style="color: #6b7280;">Phương thức:</span>
-          <span style="font-weight: 600;">${methodText}</span>
-        </div>
-        
-        <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
-          <span style="color: #6b7280;">Trạng thái:</span>
-          <span style="font-weight: 600; color: ${statusColor};">${statusText}</span>
-        </div>
-        
-        <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
-          <span style="color: #6b7280;">Số tiền:</span>
-          <span style="font-weight: 600; color: #111827;">${formatCurrency(paymentInfo.amount)}</span>
-        </div>
-        
-        <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
-          <span style="color: #6b7280;">Ngày đặt hàng:</span>
-          <span style="font-weight: 600;">${new Date(paymentInfo.orderDate).toLocaleString('vi-VN')}</span>
-        </div>
-        
-        ${paymentInfo.transactionId ? `
-        <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
-          <span style="color: #6b7280;">Mã giao dịch:</span>
-          <span style="font-weight: 600; font-family: monospace;">${paymentInfo.transactionId}</span>
-        </div>
-        ` : ''}
-      </div>
-      
-      <div style="margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end;">
-        ${paymentInfo.paymentStatus === 'CHUA_THANH_TOAN' ? `
-          <button id="btn-pay-now" style="
-            padding: 10px 20px;
-            background: #10b981;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-          ">Thanh toán ngay</button>
-        ` : ''}
-        
-        <button id="btn-close" style="
-          padding: 10px 20px;
-          background: #f3f4f6;
-          color: #374151;
-          border: 1px solid #d1d5db;
-          border-radius: 6px;
-          cursor: pointer;
-          font-weight: 600;
-        ">Đóng</button>
-      </div>
-    `
-
-    content.querySelector('#btn-close').addEventListener('click', () => {
-      document.body.removeChild(dialog)
-    })
-
-    if (paymentInfo.paymentStatus === 'CHUA_THANH_TOAN') {
-      content.querySelector('#btn-pay-now').addEventListener('click', () => {
-        document.body.removeChild(dialog)
-        showPaymentDialog(paymentInfo.orderId)
-      })
-    }
-
-    dialog.appendChild(content)
-    document.body.appendChild(dialog)
-
-    dialog.addEventListener('click', (e) => {
-      if (e.target === dialog) {
-        document.body.removeChild(dialog)
-      }
-    })
   }
 
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '40px' }}>
-        <div>Đang tải đơn hàng...</div>
+        <div style={{
+          width: '40px',
+          height: '40px',
+          border: `3px solid ${COLORS.border}`,
+          borderTop: `3px solid ${COLORS.primary}`,
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite',
+          margin: '0 auto 16px'
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <p>Đang tải...</p>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div style={{ textAlign: 'center', padding: '40px' }}>
-        <div style={{ color: '#ef4444', marginBottom: '16px' }}>{error}</div>
+      <div style={{ textAlign: 'center', padding: '40px', color: COLORS.danger }}>
+        <p>{error}</p>
         <button
           onClick={fetchOrders}
           style={{
-            padding: '8px 16px',
-            backgroundColor: '#3b82f6',
+            padding: '10px 20px',
+            backgroundColor: COLORS.primary,
             color: 'white',
             border: 'none',
-            borderRadius: '4px',
+            borderRadius: '8px',
             cursor: 'pointer'
           }}
         >
