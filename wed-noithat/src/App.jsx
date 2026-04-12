@@ -3,6 +3,7 @@ import './App.css'
 import { CategoryTab } from './tabs/CategoryTab.jsx'
 import { ProductTab } from './tabs/ProductTab.jsx'
 import { OrderTab } from './tabs/OrderTab.jsx'
+import { InvoiceTab } from './tabs/InvoiceTab.jsx'
 import { LoginPage } from './LoginPage.jsx'
 import { RegisterPage } from './RegisterPage.jsx'
 import { SearchPage } from './SearchPage.jsx'
@@ -127,6 +128,12 @@ function App() {
           >
             Đơn Hàng
           </button>
+          <button
+            className={`tab-btn ${activeTab === 'invoices' ? 'active' : ''}`}
+            onClick={() => setActiveTab('invoices')}
+          >
+            Hóa Đơn
+          </button>
         </div>
       </header>
       <main className="app-main">
@@ -134,6 +141,7 @@ function App() {
         {activeTab === 'products' && <ProductTab />}
         {activeTab === 'search' && <SearchPage />}
         {activeTab === 'orders' && <OrderTab />}
+        {activeTab === 'invoices' && <InvoiceTab />}
       </main>
     </div>
   )
