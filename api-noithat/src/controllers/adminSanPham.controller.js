@@ -66,17 +66,19 @@ async function taoSanPham(req, res, next) {
       trangThai,
     } = req.body;
 
-    if (!danhMucId || !ten || !gia) {
-      return res.status(400).json({ message: 'danhMucId, ten, gia la bat buoc' });
-    }
-    if (!mongoose.isValidObjectId(danhMucId)) {
+    // Kiểm tra và gán giá trị mặc định cho các trường thiếu
+    const finalDanhMucId = danhMucId || '000000000000000000000000'; // Giá trị mặc định
+    const finalTen = ten || 'Sản phẩm chưa đặt tên';
+    const finalGia = gia || 0;
+
+    if (danhMucId && !mongoose.isValidObjectId(danhMucId)) {
       return res.status(400).json({ message: 'danhMucId khong hop le' });
     }
 
     const sp = await SanPham.create({
-      danh_muc_id: danhMucId,
-      ten,
-      gia,
+      danh_muc_id: finalDanhMucId,
+      ten: finalTen,
+      gia: finalGia,
       kich_thuoc: kichThuoc || null,
       chat_lieu: chatLieu || '',
       mo_ta: moTa || '',

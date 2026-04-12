@@ -15,6 +15,18 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppBanGhe">
         <activity
+            android:name=".PaymentActivity"
+            android:exported="false" />
+        <activity
+            android:name=".PaymentStatusActivity"
+            android:exported="false" />
+        <activity
+            android:name=".PaymentHistoryActivity"
+            android:exported="false" />
+        <activity
+            android:name=".PaymentReceiptActivity"
+            android:exported="false" />
+        <activity
             android:name=".PolicyActivity"
             android:exported="false" />
         <activity
