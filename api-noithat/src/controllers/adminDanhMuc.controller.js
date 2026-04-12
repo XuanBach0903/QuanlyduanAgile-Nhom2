@@ -1,3 +1,5 @@
+// test: kiểm tra quản lý sản phẩm
+// bug: không cập nhật sản phẩm
 const DanhMuc = require('../models/DanhMuc');
 
 // GET /admin/danh-muc
