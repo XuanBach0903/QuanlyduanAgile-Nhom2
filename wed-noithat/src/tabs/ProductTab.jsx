@@ -1,6 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { API_BASE_URL } from '../config.js';
 
+// Màu sắc chính
+const COLORS = {
+  primary: '#4f46e5',
+  primaryHover: '#4338ca',
+  primaryLight: '#e0e7ff',
+  danger: '#ef4444',
+  dangerHover: '#dc2626',
+  dangerLight: '#fee2e2',
+  success: '#10b981',
+  successLight: '#d1fae5',
+  warning: '#f59e0b',
+  warningLight: '#fef3c7',
+  gray: '#6b7280',
+  grayLight: '#f3f4f6',
+  grayBorder: '#e5e7eb',
+  white: '#ffffff',
+  text: '#1f2937',
+  textLight: '#6b7280',
+};
+
 export function ProductTab() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -17,6 +37,10 @@ export function ProductTab() {
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewsError, setReviewsError] = useState('');
   const [reviewSort, setReviewSort] = useState('moiNhat'); // moiNhat | cuNhat
+  const [toast, setToast] = useState(null); // { type: 'success'|'error', message: '' }
+  const [imagePreview, setImagePreview] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(null); // productId cần xóa
+  const [formErrors, setFormErrors] = useState({});
   const [form, setForm] = useState({
     ten: '',
     gia: '',
@@ -164,16 +188,41 @@ export function ProductTab() {
   function handleChange(e) {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    // Xóa lỗi khi user nhập
+    if (formErrors[name]) {
+      setFormErrors((prev) => ({ ...prev, [name]: null }));
+    }
+    // Preview ảnh khi nhập URL hình đại diện
+    if (name === 'hinhDaiDien') {
+      setImagePreview(value);
+    }
+  }
+
+  // Toast helper
+  function showToast(type, message) {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 3000);
+  }
+
+  // Validate form
+  function validateForm() {
+    const errors = {};
+    if (!form.ten.trim()) errors.ten = 'Vui lòng nhập tên sản phẩm';
+    if (!form.danhMucId) errors.danhMucId = 'Vui lòng chọn danh mục';
+    if (form.gia && Number(form.gia) < 0) errors.gia = 'Giá không được âm';
+    if (form.tonKho && Number(form.tonKho) < 0) errors.tonKho = 'Tồn kho không được âm';
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   }
 
   async function handleCreate(e) {
     e.preventDefault();
+    if (!validateForm()) {
+      showToast('error', 'Vui lòng kiểm tra lại thông tin');
+      return;
+    }
     try {
       setCreateError('');
-      if (!form.danhMucId) {
-        setCreateError('Vui long chon danh muc');
-        return;
-      }
       const token = localStorage.getItem('adminToken');
       let hinhAnhArray;
       if (typeof form.hinhAnh === 'string') {
@@ -242,20 +291,22 @@ export function ProductTab() {
       setEditingId(null);
       setFormOpen(false);
       await reloadProducts();
+      showToast('success', editingId ? 'Cập nhật sản phẩm thành công!' : 'Thêm sản phẩm thành công!');
     } catch (err) {
-      setCreateError(
-        err.message || (editingId ? 'Cap nhat san pham that bai' : 'Them san pham that bai')
-      );
-    } finally {
-      // không đóng form tự động, chỉ reset lỗi
+      setCreateError(err.message || (editingId ? 'Cập nhật sản phẩm thất bại' : 'Thêm sản phẩm thất bại'));
+      showToast('error', err.message || 'Đã có lỗi xảy ra');
     }
   }
 
   async function handleDelete(productId) {
-    if (!window.confirm('Ban co chac muon xoa san pham nay?')) return;
+    setConfirmDelete(productId);
+  }
+
+  async function confirmDeleteProduct() {
+    if (!confirmDelete) return;
     try {
       const token = localStorage.getItem('adminToken');
-      const res = await fetch(`${API_BASE_URL}/admin/san-pham/${productId}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/san-pham/${confirmDelete}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -264,27 +315,121 @@ export function ProductTab() {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || `Xoa san pham that bai (${res.status})`);
+        throw new Error(data.message || `Xóa sản phẩm thất bại (${res.status})`);
       }
       await reloadProducts();
+      showToast('success', 'Xóa sản phẩm thành công!');
     } catch (err) {
-      alert(err.message || 'Khong the xoa san pham');
+      showToast('error', err.message || 'Không thể xóa sản phẩm');
+    } finally {
+      setConfirmDelete(null);
     }
   }
 
   return (
-    <div className="admin-panel">
-      <div className="admin-panel-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span>Quan ly san pham</span>
+    <div className="admin-panel" style={{ backgroundColor: COLORS.white, borderRadius: '12px', padding: '20px' }}>
+      {/* Toast Notification */}
+      {toast && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          padding: '12px 20px',
+          borderRadius: '8px',
+          backgroundColor: toast.type === 'success' ? COLORS.success : COLORS.danger,
+          color: 'white',
+          fontSize: '14px',
+          fontWeight: 500,
+          zIndex: 1000,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          animation: 'slideIn 0.3s ease-out',
+        }}>
+          {toast.type === 'success' ? '✓ ' : '✗ '}{toast.message}
+          <style>{`@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }`}</style>
+        </div>
+      )}
+
+      {/* Modal xác nhận xóa */}
+      {confirmDelete && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100,
+        }}>
+          <div style={{
+            backgroundColor: COLORS.white,
+            borderRadius: '12px',
+            padding: '24px',
+            width: '100%',
+            maxWidth: '400px',
+            textAlign: 'center',
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🗑️</div>
+            <h3 style={{ margin: '0 0 8px', color: COLORS.text }}>Xác nhận xóa</h3>
+            <p style={{ color: COLORS.gray, marginBottom: '24px' }}>Bạn có chắc muốn xóa sản phẩm này? Hành động này không thể hoàn tác.</p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button
+                onClick={() => setConfirmDelete(null)}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: `1px solid ${COLORS.grayBorder}`,
+                  backgroundColor: COLORS.white,
+                  color: COLORS.text,
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                }}
+              >
+                Hủy
+              </button>
+              <button
+                onClick={confirmDeleteProduct}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: COLORS.danger,
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                }}
+              >
+                Xóa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="admin-panel-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <span style={{ fontSize: '20px', fontWeight: 600, color: COLORS.text }}>📦 Quản lý sản phẩm</span>
         <button
-          className="admin-header-btn"
-          style={{ backgroundColor: '#111827', color: 'white' }}
+          style={{
+            backgroundColor: COLORS.primary,
+            color: 'white',
+            border: 'none',
+            padding: '10px 20px',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: 500,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => e.target.style.backgroundColor = COLORS.primaryHover}
+          onMouseLeave={(e) => e.target.style.backgroundColor = COLORS.primary}
           onClick={async () => {
-            // Mở form ở chế độ thêm mới
             if (!formOpen) {
               await fetchCategories();
             }
             setEditingId(null);
+            setImagePreview('');
             setForm({
               ten: '',
               gia: '',
@@ -299,48 +444,70 @@ export function ProductTab() {
               hinhAnh: '',
             });
             setCreateError('');
+            setFormErrors({});
             setFormOpen(true);
           }}
         >
-          + Them san pham
+          + Thêm sản phẩm
         </button>
       </div>
-      <div style={{ marginTop: 8, marginBottom: 8 }}>
-        <input
-          placeholder="Tim kiem san pham theo ten..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid #e5e7eb', fontSize: 13 }}
-        />
+      <div style={{ marginBottom: '16px' }}>
+        <div style={{ position: 'relative' }}>
+          <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: COLORS.gray }}>🔍</span>
+          <input
+            placeholder="Tìm kiếm sản phẩm theo tên..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '10px 12px 10px 40px',
+              borderRadius: '8px',
+              border: `1px solid ${COLORS.grayBorder}`,
+              fontSize: '14px',
+              backgroundColor: COLORS.grayLight,
+              outline: 'none',
+              transition: 'all 0.2s',
+            }}
+            onFocus={(e) => e.target.style.borderColor = COLORS.primary}
+            onBlur={(e) => e.target.style.borderColor = COLORS.grayBorder}
+          />
+        </div>
       </div>
       {categories.length > 0 && (
-        <div style={{ marginBottom: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        <div style={{ marginBottom: '16px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+          <span style={{ fontSize: '14px', color: COLORS.gray, fontWeight: 500 }}>Danh mục:</span>
           <button
             type="button"
-            className="admin-header-btn"
             onClick={() => setSelectedCategoryId('')}
             style={{
-              padding: '4px 10px',
-              backgroundColor: selectedCategoryId ? '#f3f4f6' : '#111827',
-              color: selectedCategoryId ? '#111827' : '#ffffff',
-              borderRadius: 999,
-              fontSize: 12,
+              padding: '6px 14px',
+              backgroundColor: selectedCategoryId ? COLORS.grayLight : COLORS.primary,
+              color: selectedCategoryId ? COLORS.text : COLORS.white,
+              borderRadius: '20px',
+              fontSize: '13px',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 500,
+              transition: 'all 0.2s',
             }}
           >
-            Tat ca
+            Tất cả
           </button>
           {categories.map((c) => (
             <button
               key={c.id}
               type="button"
-              className="admin-header-btn"
               onClick={() => setSelectedCategoryId(c.id)}
               style={{
-                padding: '4px 10px',
-                backgroundColor: selectedCategoryId === c.id ? '#111827' : '#f3f4f6',
-                color: selectedCategoryId === c.id ? '#ffffff' : '#111827',
-                borderRadius: 999,
-                fontSize: 12,
+                padding: '6px 14px',
+                backgroundColor: selectedCategoryId === c.id ? COLORS.primary : COLORS.grayLight,
+                color: selectedCategoryId === c.id ? COLORS.white : COLORS.text,
+                borderRadius: '20px',
+                fontSize: '13px',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: 500,
+                transition: 'all 0.2s',
               }}
             >
               {c.ten}
@@ -348,7 +515,19 @@ export function ProductTab() {
           ))}
         </div>
       )}
-      {loading && <div className="admin-panel-placeholder">Dang tai danh sach san pham...</div>}
+      {loading && (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '40px' }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            border: `3px solid ${COLORS.grayBorder}`,
+            borderTop: `3px solid ${COLORS.primary}`,
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+          }} />
+          <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+        </div>
+      )}
       {error && !loading && (
         <div className="admin-panel-placeholder" style={{ color: '#b91c1c' }}>
           {error}
@@ -400,16 +579,19 @@ export function ProductTab() {
                   <td style={{ padding: '8px 10px', borderBottom: '1px solid #f3f4f6', textAlign: 'center' }}>
                     <button
                       className="admin-header-btn"
-                      style={{ marginRight: 4, backgroundColor: '#e5e7eb', color: '#111827' }}
+                      style={{ marginRight: 4, backgroundColor: COLORS.warningLight, color: COLORS.warning, border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', transition: 'all 0.2s' }}
                       onClick={() => handleShowReviews(p)}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = COLORS.warning}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = COLORS.warningLight}
                     >
-                      Danh gia
+                      ⭐ Đánh giá
                     </button>
                     <button
                       className="admin-header-btn"
-                      style={{ marginRight: 4 }}
+                      style={{ marginRight: 4, backgroundColor: COLORS.primaryLight, color: COLORS.primary, border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', transition: 'all 0.2s' }}
                       onClick={() => {
                         setEditingId(p.id);
+                        setImagePreview(p.hinhDaiDien || '');
                         setForm({
                           ten: p.ten,
                           gia: p.gia,
@@ -426,17 +608,22 @@ export function ProductTab() {
                             : p.hinhAnh || '',
                         });
                         setCreateError('');
+                        setFormErrors({});
                         setFormOpen(true);
                       }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = COLORS.primary}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = COLORS.primaryLight}
                     >
-                      Sua
+                      ✏️ Sửa
                     </button>
                     <button
                       className="admin-header-btn"
-                      style={{ backgroundColor: '#fee2e2', color: '#b91c1c' }}
+                      style={{ backgroundColor: COLORS.dangerLight, color: COLORS.danger, border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', transition: 'all 0.2s' }}
                       onClick={() => handleDelete(p.id)}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = COLORS.danger}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = COLORS.dangerLight}
                     >
-                      Xoa
+                      🗑️ Xóa
                     </button>
                   </td>
                 </tr>
@@ -582,7 +769,7 @@ export function ProductTab() {
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.35)',
+            backgroundColor: 'rgba(0,0,0,0.5)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -591,17 +778,19 @@ export function ProductTab() {
         >
           <div
             style={{
-              backgroundColor: 'white',
-              borderRadius: 12,
-              padding: 20,
+              backgroundColor: COLORS.white,
+              borderRadius: '16px',
+              padding: '24px',
               width: '100%',
-              maxWidth: 420,
-              boxShadow: '0 20px 40px rgba(15,23,42,0.35)',
+              maxWidth: '480px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 25px 50px rgba(0,0,0,0.25)',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <div style={{ fontWeight: 600, fontSize: 16 }}>
-                {editingId ? 'Sua San Pham' : 'Them San Pham'}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div style={{ fontWeight: 700, fontSize: '18px', color: COLORS.text }}>
+                {editingId ? '✏️ Sửa sản phẩm' : '➕ Thêm sản phẩm mới'}
               </div>
               <button
                 type="button"
@@ -609,159 +798,306 @@ export function ProductTab() {
                   setFormOpen(false);
                   setEditingId(null);
                   setCreateError('');
+                  setFormErrors({});
+                  setImagePreview('');
                 }}
-                style={{ border: 'none', background: 'transparent', fontSize: 18, cursor: 'pointer' }}
+                style={{ border: 'none', background: 'transparent', fontSize: '24px', cursor: 'pointer', color: COLORS.gray }}
               >
                 ×
               </button>
             </div>
             <form onSubmit={handleCreate}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {/* Preview ảnh */}
+                {imagePreview && (
+                  <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      style={{ maxWidth: '100%', maxHeight: '150px', borderRadius: '8px', objectFit: 'cover' }}
+                      onError={() => setImagePreview('')}
+                    />
+                  </div>
+                )}
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <label style={{ fontSize: 12, marginBottom: 4 }}>Ten san pham</label>
+                  <label style={{ fontSize: '13px', marginBottom: '6px', fontWeight: 500, color: COLORS.text }}>
+                    Tên sản phẩm <span style={{ color: COLORS.danger }}>*</span>
+                  </label>
                   <input
                     name="ten"
                     value={form.ten}
                     onChange={handleChange}
-                    required
-                    style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 13 }}
+                    placeholder="Nhập tên sản phẩm"
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      border: `1px solid ${formErrors.ten ? COLORS.danger : COLORS.grayBorder}`,
+                      fontSize: '14px',
+                      outline: 'none',
+                      transition: 'all 0.2s',
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = COLORS.primary}
+                    onBlur={(e) => e.target.style.borderColor = formErrors.ten ? COLORS.danger : COLORS.grayBorder}
                   />
+                  {formErrors.ten && <span style={{ color: COLORS.danger, fontSize: '12px', marginTop: '4px' }}>{formErrors.ten}</span>}
+                </div>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <label style={{ fontSize: '13px', marginBottom: '6px', fontWeight: 500, color: COLORS.text }}>Giá (VNĐ)</label>
+                    <input
+                      name="gia"
+                      type="number"
+                      min="0"
+                      value={form.gia}
+                      onChange={handleChange}
+                      placeholder="0"
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        border: `1px solid ${formErrors.gia ? COLORS.danger : COLORS.grayBorder}`,
+                        fontSize: '14px',
+                        outline: 'none',
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = COLORS.primary}
+                      onBlur={(e) => e.target.style.borderColor = formErrors.gia ? COLORS.danger : COLORS.grayBorder}
+                    />
+                    {formErrors.gia && <span style={{ color: COLORS.danger, fontSize: '12px', marginTop: '4px' }}>{formErrors.gia}</span>}
+                  </div>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <label style={{ fontSize: '13px', marginBottom: '6px', fontWeight: 500, color: COLORS.text }}>Tồn kho</label>
+                    <input
+                      name="tonKho"
+                      type="number"
+                      min="0"
+                      value={form.tonKho}
+                      onChange={handleChange}
+                      placeholder="0"
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        border: `1px solid ${formErrors.tonKho ? COLORS.danger : COLORS.grayBorder}`,
+                        fontSize: '14px',
+                        outline: 'none',
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = COLORS.primary}
+                      onBlur={(e) => e.target.style.borderColor = formErrors.tonKho ? COLORS.danger : COLORS.grayBorder}
+                    />
+                    {formErrors.tonKho && <span style={{ color: COLORS.danger, fontSize: '12px', marginTop: '4px' }}>{formErrors.tonKho}</span>}
+                  </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <label style={{ fontSize: 12, marginBottom: 4 }}>Gia (VND)</label>
-                  <input
-                    name="gia"
-                    type="number"
-                    min="0"
-                    value={form.gia}
-                    onChange={handleChange}
-                    style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 13 }}
-                  />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <label style={{ fontSize: 12, marginBottom: 4 }}>Mo ta</label>
+                  <label style={{ fontSize: '13px', marginBottom: '6px', fontWeight: 500, color: COLORS.text }}>Mô tả</label>
                   <textarea
                     name="moTa"
                     value={form.moTa}
                     onChange={handleChange}
-                    rows={2}
-                    style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 13, resize: 'vertical' }}
+                    placeholder="Mô tả sản phẩm..."
+                    rows={3}
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      border: `1px solid ${COLORS.grayBorder}`,
+                      fontSize: '14px',
+                      resize: 'vertical',
+                      outline: 'none',
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = COLORS.primary}
+                    onBlur={(e) => e.target.style.borderColor = COLORS.grayBorder}
                   />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <label style={{ fontSize: 12, marginBottom: 4 }}>Chat lieu</label>
+                  <label style={{ fontSize: '13px', marginBottom: '6px', fontWeight: 500, color: COLORS.text }}>Chất liệu</label>
                   <input
                     name="chatLieu"
                     value={form.chatLieu}
                     onChange={handleChange}
-                    style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 13 }}
+                    placeholder="VD: Gỗ sồi, Da PU..."
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      border: `1px solid ${COLORS.grayBorder}`,
+                      fontSize: '14px',
+                      outline: 'none',
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = COLORS.primary}
+                    onBlur={(e) => e.target.style.borderColor = COLORS.grayBorder}
                   />
                 </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <label style={{ fontSize: 12, marginBottom: 4 }}>Dai (cm)</label>
-                    <input
-                      name="dai_cm"
-                      type="number"
-                      min="0"
-                      value={form.dai_cm}
-                      onChange={handleChange}
-                      style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 13 }}
-                    />
-                  </div>
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <label style={{ fontSize: 12, marginBottom: 4 }}>Rong (cm)</label>
-                    <input
-                      name="rong_cm"
-                      type="number"
-                      min="0"
-                      value={form.rong_cm}
-                      onChange={handleChange}
-                      style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 13 }}
-                    />
-                  </div>
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <label style={{ fontSize: 12, marginBottom: 4 }}>Cao (cm)</label>
-                    <input
-                      name="cao_cm"
-                      type="number"
-                      min="0"
-                      value={form.cao_cm}
-                      onChange={handleChange}
-                      style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 13 }}
-                    />
+                <div>
+                  <label style={{ fontSize: '13px', marginBottom: '6px', fontWeight: 500, color: COLORS.text, display: 'block' }}>Kích thước (cm)</label>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <div style={{ flex: 1 }}>
+                      <input
+                        name="dai_cm"
+                        type="number"
+                        min="0"
+                        value={form.dai_cm}
+                        onChange={handleChange}
+                        placeholder="Dài"
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          border: `1px solid ${COLORS.grayBorder}`,
+                          fontSize: '14px',
+                          width: '100%',
+                          outline: 'none',
+                        }}
+                        onFocus={(e) => e.target.style.borderColor = COLORS.primary}
+                        onBlur={(e) => e.target.style.borderColor = COLORS.grayBorder}
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <input
+                        name="rong_cm"
+                        type="number"
+                        min="0"
+                        value={form.rong_cm}
+                        onChange={handleChange}
+                        placeholder="Rộng"
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          border: `1px solid ${COLORS.grayBorder}`,
+                          fontSize: '14px',
+                          width: '100%',
+                          outline: 'none',
+                        }}
+                        onFocus={(e) => e.target.style.borderColor = COLORS.primary}
+                        onBlur={(e) => e.target.style.borderColor = COLORS.grayBorder}
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <input
+                        name="cao_cm"
+                        type="number"
+                        min="0"
+                        value={form.cao_cm}
+                        onChange={handleChange}
+                        placeholder="Cao"
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          border: `1px solid ${COLORS.grayBorder}`,
+                          fontSize: '14px',
+                          width: '100%',
+                          outline: 'none',
+                        }}
+                        onFocus={(e) => e.target.style.borderColor = COLORS.primary}
+                        onBlur={(e) => e.target.style.borderColor = COLORS.grayBorder}
+                      />
+                    </div>
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <label style={{ fontSize: 12, marginBottom: 4 }}>Hinh anh (URL, phan cach boi dau phay)</label>
+                  <label style={{ fontSize: '13px', marginBottom: '6px', fontWeight: 500, color: COLORS.text }}>Hình ảnh (URL, phân cách bằng dấu phẩy)</label>
                   <input
                     name="hinhAnh"
                     value={form.hinhAnh}
                     onChange={handleChange}
                     placeholder="https://...1.jpg, https://...2.jpg"
-                    style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 13 }}
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      border: `1px solid ${COLORS.grayBorder}`,
+                      fontSize: '14px',
+                      outline: 'none',
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = COLORS.primary}
+                    onBlur={(e) => e.target.style.borderColor = COLORS.grayBorder}
                   />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <label style={{ fontSize: 12, marginBottom: 4 }}>URL hinh dai dien</label>
+                  <label style={{ fontSize: '13px', marginBottom: '6px', fontWeight: 500, color: COLORS.text }}>URL hình đại diện</label>
                   <input
                     name="hinhDaiDien"
                     value={form.hinhDaiDien}
                     onChange={handleChange}
-                    style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 13 }}
+                    placeholder="https://...jpg"
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      border: `1px solid ${COLORS.grayBorder}`,
+                      fontSize: '14px',
+                      outline: 'none',
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = COLORS.primary}
+                    onBlur={(e) => e.target.style.borderColor = COLORS.grayBorder}
                   />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <label style={{ fontSize: 12, marginBottom: 4 }}>Danh muc</label>
+                  <label style={{ fontSize: '13px', marginBottom: '6px', fontWeight: 500, color: COLORS.text }}>
+                    Danh mục <span style={{ color: COLORS.danger }}>*</span>
+                  </label>
                   <select
                     name="danhMucId"
                     value={form.danhMucId}
                     onChange={handleChange}
-                    required
-                    style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 13 }}
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      border: `1px solid ${formErrors.danhMucId ? COLORS.danger : COLORS.grayBorder}`,
+                      fontSize: '14px',
+                      outline: 'none',
+                      backgroundColor: COLORS.white,
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = COLORS.primary}
+                    onBlur={(e) => e.target.style.borderColor = formErrors.danhMucId ? COLORS.danger : COLORS.grayBorder}
                   >
-                    <option value="">-- Chon danh muc --</option>
+                    <option value="">-- Chọn danh mục --</option>
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.ten}
                       </option>
                     ))}
                   </select>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <label style={{ fontSize: 12, marginBottom: 4 }}>So luong</label>
-                  <input
-                    name="tonKho"
-                    type="number"
-                    min="0"
-                    value={form.tonKho}
-                    onChange={handleChange}
-                    style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 13 }}
-                  />
+                  {formErrors.danhMucId && <span style={{ color: COLORS.danger, fontSize: '12px', marginTop: '4px' }}>{formErrors.danhMucId}</span>}
                 </div>
               </div>
               {createError && (
-                <div style={{ marginTop: 8, fontSize: 12, color: '#b91c1c' }}>{createError}</div>
+                <div style={{ marginTop: '12px', padding: '10px', borderRadius: '8px', backgroundColor: COLORS.dangerLight, color: COLORS.danger, fontSize: '13px' }}>
+                  ⚠️ {createError}
+                </div>
               )}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
                 <button
                   type="button"
-                  className="admin-header-btn"
-                  style={{ backgroundColor: '#e5e7eb', color: '#111827' }}
                   onClick={() => {
                     setFormOpen(false);
                     setEditingId(null);
                     setCreateError('');
+                    setFormErrors({});
+                    setImagePreview('');
+                  }}
+                  style={{
+                    padding: '12px 20px',
+                    borderRadius: '8px',
+                    border: `1px solid ${COLORS.grayBorder}`,
+                    backgroundColor: COLORS.white,
+                    color: COLORS.text,
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: 500,
                   }}
                 >
-                  Huy
+                  Hủy
                 </button>
                 <button
                   type="submit"
-                  className="admin-header-btn"
-                  style={{ backgroundColor: '#111827', color: 'white' }}
+                  style={{
+                    padding: '12px 24px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    backgroundColor: COLORS.primary,
+                    color: 'white',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = COLORS.primaryHover}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = COLORS.primary}
                 >
-                  {editingId ? 'Cap nhat' : 'Them moi'}
+                  {editingId ? '💾 Cập nhật' : '➕ Thêm mới'}
                 </button>
               </div>
             </form>
