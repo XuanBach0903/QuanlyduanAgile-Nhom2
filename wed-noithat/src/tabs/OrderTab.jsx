@@ -176,12 +176,12 @@ function OrderTab() {
     )
   }
 
-  if (showDetail && selectedOrder) {
+  if (selectedOrder) {
     return (
       <div style={{ padding: '20px' }}>
         <div style={{ marginBottom: '20px' }}>
           <button
-            onClick={() => setShowDetail(false)}
+            onClick={() => setSelectedOrder(null)}
             style={{
               padding: '8px 16px',
               backgroundColor: '#6b7280',
@@ -214,8 +214,8 @@ function OrderTab() {
             <div>
               <h4>Thông tin thanh toán</h4>
               <p><strong>Phương thức:</strong> {selectedOrder.phuongThucThanhToan}</p>
-              <p><strong>Trạng thái:</strong> {getPaymentStatusText(selectedOrder.trangThaiThanhToan)}</p>
-              <p><strong>Tổng tiền:</strong> {formatCurrency(selectedOrder.tongTien)}</p>
+              <p><strong>Trạng thái:</strong> {PAYMENT_STATUS[selectedOrder.trangThaiThanhToan] || selectedOrder.trangThaiThanhToan}</p>
+              <p><strong>Tổng tiền:</strong> {formatMoney(selectedOrder.tongTien)}</p>
             </div>
           </div>
 
@@ -225,11 +225,11 @@ function OrderTab() {
               display: 'inline-block',
               padding: '4px 12px',
               borderRadius: '4px',
-              backgroundColor: getStatusColor(selectedOrder.trangThaiDonHang),
+              backgroundColor: (ORDER_STATUS[selectedOrder.trangThaiDonHang] || {}).color || COLORS.gray,
               color: 'white',
               fontSize: '14px'
             }}>
-              {getStatusText(selectedOrder.trangThaiDonHang)}
+              {(ORDER_STATUS[selectedOrder.trangThaiDonHang] || {}).text || selectedOrder.trangThaiDonHang}
             </div>
           </div>
 
@@ -274,7 +274,7 @@ function OrderTab() {
                   <div style={{ flex: 1 }}>
                     <h5 style={{ margin: '0 0 4px 0' }}>{item.tenSanPham}</h5>
                     <p style={{ margin: '0', color: '#6b7280', fontSize: '14px' }}>
-                      Số lượng: {item.soLuong} × {formatCurrency(item.donGia)}
+                      Số lượng: {item.soLuong} × {formatMoney(item.donGia)}
                     </p>
                     {item.danhGia && (
                       <p style={{ margin: '4px 0 0 0', color: '#10b981', fontSize: '12px' }}>
@@ -283,7 +283,7 @@ function OrderTab() {
                     )}
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <strong>{formatCurrency(item.soLuong * item.donGia)}</strong>
+                    <strong>{formatMoney(item.soLuong * item.donGia)}</strong>
                   </div>
                 </div>
               ))}
@@ -292,7 +292,7 @@ function OrderTab() {
 
           <div style={{ marginTop: '20px', textAlign: 'right' }}>
             <p style={{ fontSize: '18px', fontWeight: 'bold' }}>
-              Tổng cộng: {formatCurrency(selectedOrder.tongTien)}
+              Tổng cộng: {formatMoney(selectedOrder.tongTien)}
             </p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
               <button
@@ -305,42 +305,10 @@ function OrderTab() {
                   cursor: 'pointer',
                   fontSize: '14px'
                 }}
-                onClick={() => xemTrangThaiThanhToan(selectedOrder.id)}
+                onClick={() => setShowCancelModal(true)}
               >
-                Xem trạng thái thanh toán
+                Hủy đơn hàng
               </button>
-              {selectedOrder.trangThaiThanhToan === 'CHUA_THANH_TOAN' && (
-                <button
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: '#10b981',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '14px'
-                  }}
-                  onClick={() => showPaymentDialog(selectedOrder.id)}
-                >
-                  Thanh toán ngay
-                </button>
-              )}
-              {['CHO_XAC_NHAN', 'DA_XAC_NHAN'].includes(selectedOrder.trangThaiDonHang) && (
-                <button
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: '#ef4444',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '14px'
-                  }}
-                  onClick={() => handleHuyDon(selectedOrder.id)}
-                >
-                  Hủy đơn hàng
-                </button>
-              )}
             </div>
           </div>
         </div>
@@ -383,12 +351,12 @@ function OrderTab() {
                 <div style={{
                   padding: '4px 8px',
                   borderRadius: '4px',
-                  backgroundColor: getStatusColor(order.trangThaiDonHang),
+                  backgroundColor: (ORDER_STATUS[order.trangThaiDonHang] || {}).color || COLORS.gray,
                   color: 'white',
                   fontSize: '12px',
                   whiteSpace: 'nowrap'
                 }}>
-                  {getStatusText(order.trangThaiDonHang)}
+                  {(ORDER_STATUS[order.trangThaiDonHang] || {}).text || order.trangThaiDonHang}
                 </div>
               </div>
               
@@ -400,7 +368,7 @@ function OrderTab() {
                   <strong>Phương thức:</strong> {order.phuongThucThanhToan}
                 </p>
                 <p style={{ margin: '4px 0' }}>
-                  <strong>Thanh toán:</strong> {getPaymentStatusText(order.trangThaiThanhToan)}
+                  <strong>Thanh toán:</strong> {PAYMENT_STATUS[order.trangThaiThanhToan] || order.trangThaiThanhToan}
                 </p>
               </div>
               
@@ -413,45 +381,9 @@ function OrderTab() {
                 alignItems: 'center'
               }}>
                 <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#111827' }}>
-                  {formatCurrency(order.tongTien)}
+                  {formatMoney(order.tongTien)}
                 </span>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  {order.trangThaiThanhToan === 'CHUA_THANH_TOAN' && (
-                    <button
-                      style={{
-                        padding: '6px 12px',
-                        backgroundColor: '#10b981',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '12px'
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        showPaymentDialog(order.id)
-                      }}
-                    >
-                      Thanh toán
-                    </button>
-                  )}
-                  <button
-                    style={{
-                      padding: '6px 12px',
-                      backgroundColor: '#3b82f6',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '12px'
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      xemTrangThaiThanhToan(order.id)
-                    }}
-                  >
-                    Trạng thái
-                  </button>
                   {['CHO_XAC_NHAN', 'DA_XAC_NHAN'].includes(order.trangThaiDonHang) && (
                     <button
                       style={{
@@ -465,7 +397,8 @@ function OrderTab() {
                       }}
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleHuyDon(order.id)
+                        setSelectedOrder(order)
+                        setShowCancelModal(true)
                       }}
                     >
                       Hủy đơn
