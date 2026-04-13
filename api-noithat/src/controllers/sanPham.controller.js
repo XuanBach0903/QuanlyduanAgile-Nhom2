@@ -1,4 +1,6 @@
-//bug: thanh toán visa bị lỗi
+// BUG02: Cho phép lưu sản phẩm khi thiếu thông tin
+
+// BUG04: Không validate giá sản phẩm
 
 const mongoose = require('mongoose');
 const SanPham = require('../models/SanPham');
