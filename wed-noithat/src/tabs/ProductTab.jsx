@@ -77,7 +77,7 @@ export function ProductTab() {
           },
         });
         if (!res.ok) {
-          throw new Error(`Loi tai san pham: ${res.status}`);
+          throw new Error(`Lỗi tải sản phẩm: ${res.status}`);
         }
         const data = await res.json();
         if (!active) return;
@@ -85,7 +85,7 @@ export function ProductTab() {
         setProducts(Array.isArray(data) ? data : data.danhSach || []);
       } catch (err) {
         if (!active) return;
-        setError(err.message || 'Khong the tai du lieu san pham');
+        setError(err.message || 'Không thể tải dữ liệu sản phẩm');
       } finally {
         if (active) setLoading(false);
       }
@@ -174,12 +174,12 @@ export function ProductTab() {
         },
       });
       if (!res.ok) {
-        throw new Error(`Loi tai san pham: ${res.status}`);
+        throw new Error(`Lỗi tải sản phẩm: ${res.status}`);
       }
       const data = await res.json();
       setProducts(Array.isArray(data) ? data : data.danhSach || []);
     } catch (err) {
-      setError(err.message || 'Khong the tai du lieu san pham');
+      setError(err.message || 'Không thể tải dữ liệu sản phẩm');
     } finally {
       setLoading(false);
     }
@@ -593,16 +593,16 @@ export function ProductTab() {
                         setEditingId(p.id);
                         setImagePreview(p.hinhDaiDien || '');
                         setForm({
-                          ten: p.ten,
-                          gia: p.gia,
-                          tonKho: p.tonKho,
+                          ten: p.ten || '',
+                          gia: p.gia ?? '',
+                          tonKho: p.tonKho ?? '',
                           danhMucId: p.danhMuc?.id || '',
-                          chatLieu: p.chatLieu,
-                          moTa: p.moTa,
-                          dai_cm: p.kichThuoc?.dai_cm,
-                          rong_cm: p.kichThuoc?.rong_cm,
-                          cao_cm: p.kichThuoc?.cao_cm,
-                          hinhDaiDien: p.hinhDaiDien,
+                          chatLieu: p.chatLieu || '',
+                          moTa: p.moTa || '',
+                          dai_cm: p.kichThuoc?.dai_cm ?? '',
+                          rong_cm: p.kichThuoc?.rong_cm ?? '',
+                          cao_cm: p.kichThuoc?.cao_cm ?? '',
+                          hinhDaiDien: p.hinhDaiDien || '',
                           hinhAnh: Array.isArray(p.hinhAnh)
                             ? p.hinhAnh.join(', ')
                             : p.hinhAnh || '',
