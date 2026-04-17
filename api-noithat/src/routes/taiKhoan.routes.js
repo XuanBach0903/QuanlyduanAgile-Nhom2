@@ -14,12 +14,23 @@ const router = express.Router();
  
 router.post('/dang-ky', dangKy);
 
+<<<<<<< HEAD
+// ✅ OK: route đăng ký
+router.post('/dang-ky', dangKy);
+
+// ✅ OK: route đăng nhập
+router.post('/dang-nhap', dangNhap);
+
+// ❌ Lưu ý: các route dưới cần middleware auth
+// 👉 nếu middleware lỗi → sẽ không truy cập được API
+=======
  
 router.post('/dang-nhap', dangNhap);
 
  
 router.post('/dang-xuat', requireAuth, dangXuat);
 
+>>>>>>> develop
  
 router.get('/toi', requireAuth, attachCurrentUser, thongTinTaiKhoan);
 

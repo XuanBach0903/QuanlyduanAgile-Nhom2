@@ -1,7 +1,14 @@
+<<<<<<< HEAD
 // BUG02: Cho phép lưu sản phẩm khi thiếu thông tin
 
 // BUG04: Không validate giá sản phẩm
+=======
+<<<<<<< HEAD
+=======
+//test: verify chức năng sau khi fix
+>>>>>>> origin/main
 
+>>>>>>> develop
 const mongoose = require('mongoose');
 const SanPham = require('../models/SanPham');
 const DanhGia = require('../models/DanhGia');

@@ -1,3 +1,6 @@
+<<<<<<< HEAD
+# QuanlyduanAgile-Nhom2
+=======
 # Quản Lý Nội Thất - Danh Mục Sản Phẩm
 
 Dự án này đã được tích hợp đầy đủ chức năng hiển thị và quản lý danh mục sản phẩm từ 3 nguồn code:
@@ -191,3 +194,4 @@ String[] demoCategories = {"Bàn", "Ghế", "Sofa", "Tủ", "Kệ", "Giường",
 - Cần cài đặt MongoDB để chạy được dự án
 - Có thể cấu hình lại các port trong file .env và package.json
 - Android app sử dụng demo data, cần kết nối với API để sử dụng data thật
+>>>>>>> develop
